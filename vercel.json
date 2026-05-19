@@ -1,0 +1,6 @@
+{
+  "redirects": [
+    { "source": "/peralna", "destination": "/", "permanent": true },
+    { "source": "/peralna/:path*", "destination": "/:path*", "permanent": true }
+  ]
+}
