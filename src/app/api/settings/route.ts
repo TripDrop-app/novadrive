@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { databaseErrorResponse } from "@/lib/api-error";
 import { getSettings, updateSettings } from "@/lib/db/settings";
 import { settingsUpdateSchema } from "@/lib/validators";
 import { suggestBaseKwhPerWash } from "@/lib/calculations";
@@ -21,8 +22,7 @@ export async function GET() {
 
     return NextResponse.json({ settings, suggestedBaseKwh });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "DATABASE_ERROR" }, { status: 500 });
+    return databaseErrorResponse(e);
   }
 }
 
@@ -50,6 +50,10 @@ export async function PUT(request: Request) {
     });
     return NextResponse.json({ settings: updated });
   } catch (e) {
+    const message = e instanceof Error ? e.message : "";
+    if (message.includes("does not exist") || message.includes("DATABASE_URL")) {
+      return databaseErrorResponse(e);
+    }
     console.error(e);
     return NextResponse.json({ error: "VALIDATION_ERROR" }, { status: 400 });
   }

@@ -5,7 +5,13 @@ import { settings } from "./schema";
 export async function getSettings() {
   const rows = await db.select().from(settings).limit(1);
   if (rows.length === 0) {
-    const [created] = await db.insert(settings).values({}).returning();
+    const [created] = await db
+      .insert(settings)
+      .values({
+        chemical1YieldWashes: 70,
+        chemical2YieldWashes: 70,
+      })
+      .returning();
     return created;
   }
   return rows[0];

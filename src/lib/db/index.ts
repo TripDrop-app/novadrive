@@ -2,12 +2,20 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
-function createDb() {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
+export function getDatabaseUrl(): string {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) {
     throw new Error("DATABASE_URL is not set");
   }
-  const sql = neon(url);
+  const url = raw.trim().replace(/^["']|["']$/g, "");
+  if (!url.startsWith("postgresql://") && !url.startsWith("postgres://")) {
+    throw new Error("DATABASE_URL must be a postgresql:// connection string");
+  }
+  return url;
+}
+
+function createDb() {
+  const sql = neon(getDatabaseUrl());
   return drizzle(sql, { schema });
 }
 

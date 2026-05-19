@@ -16,8 +16,10 @@ Mobile-first PWA for operating a self-service car wash. Macedonian UI, MKD curre
 
 ```bash
 npm install
-npm run db:push
+npm run db:setup
 ```
+
+(`db:setup` creates all tables in Neon. Run this once on your PC with `.env` filled in.)
 
 3. Run dev server:
 

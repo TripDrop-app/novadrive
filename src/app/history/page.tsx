@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { formatMkd } from "@/lib/format";
 import { t } from "@/lib/i18n";
 
@@ -21,12 +22,25 @@ export default function HistoryPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
     fetch("/api/daily-entries")
       .then((r) => r.json())
       .then((d) => setEntries(d.entries ?? []))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
   }, []);
+
+  async function deleteEntry(id: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(t("history.deleteConfirm"))) return;
+    await fetch(`/api/daily-entries/${id}`, { method: "DELETE" });
+    load();
+  }
 
   return (
     <AppShell>
@@ -55,9 +69,18 @@ export default function HistoryPage() {
                       P3:{e.p3Count}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-primary">{formatMkd(Number(e.netProfitMkd))}</p>
-                    <p className="text-xs text-muted">{formatMkd(Number(e.grossRevenueMkd))}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className="font-bold text-primary">{formatMkd(Number(e.netProfitMkd))}</p>
+                      <p className="text-xs text-muted">{formatMkd(Number(e.grossRevenueMkd))}</p>
+                    </div>
+                    <Button
+                      variant="danger"
+                      className="!min-h-10 !px-3 !py-2 text-xs"
+                      onClick={(ev) => deleteEntry(e.id, ev)}
+                    >
+                      {t("common.delete")}
+                    </Button>
                   </div>
                 </Card>
               </Link>

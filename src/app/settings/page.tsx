@@ -29,37 +29,54 @@ interface SettingsForm {
 export default function SettingsPage() {
   const [form, setForm] = useState<SettingsForm | null>(null);
   const [suggestedBase, setSuggestedBase] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [tokenQty, setTokenQty] = useState("1");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseNote, setExpenseNote] = useState("");
   const [expenseCategory, setExpenseCategory] = useState<"equipment" | "repairs" | "misc" | "chemicals">("misc");
 
-  function load() {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((d) => {
-        const s = d.settings;
-        setSuggestedBase(d.suggestedBaseKwh);
-        setForm({
-          electricityRateMkd: Number(s.electricityRateMkd),
-          waterRateMkdPerM3: Number(s.waterRateMkdPerM3),
-          chemical1CostMkd: Number(s.chemical1CostMkd),
-          chemical2CostMkd: Number(s.chemical2CostMkd),
-          chemical1YieldWashes: s.chemical1YieldWashes,
-          chemical2YieldWashes: s.chemical2YieldWashes,
-          meterBaselineKwh: s.meterBaselineKwh ? Number(s.meterBaselineKwh) : null,
-          waterPerP1Liters: s.waterPerP1Liters,
-          waterPerP2P3Liters: s.waterPerP2P3Liters,
-          electricityExtraP3Kwh: Number(s.electricityExtraP3Kwh),
-          baseKwhPerWash: s.baseKwhPerWash ? Number(s.baseKwhPerWash) : null,
-          tokenValueMkd: s.tokenValueMkd,
-          priceP1Mkd: s.priceP1Mkd,
-          priceP2Mkd: s.priceP2Mkd,
-          priceP3Mkd: s.priceP3Mkd,
-          setupCompleted: s.setupCompleted,
-        });
+  async function load() {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const r = await fetch("/api/settings");
+      const d = await r.json();
+      if (!r.ok) {
+        setLoadError(d.hint ?? "Не може да се поврзе со базата. Проверете DATABASE_URL на Vercel.");
+        setForm(null);
+        return;
+      }
+      const s = d.settings;
+      if (!s) {
+        setLoadError("Поставките не се вратени од серверот.");
+        return;
+      }
+      setSuggestedBase(d.suggestedBaseKwh);
+      setForm({
+        electricityRateMkd: Number(s.electricityRateMkd),
+        waterRateMkdPerM3: Number(s.waterRateMkdPerM3),
+        chemical1CostMkd: Number(s.chemical1CostMkd),
+        chemical2CostMkd: Number(s.chemical2CostMkd),
+        chemical1YieldWashes: s.chemical1YieldWashes,
+        chemical2YieldWashes: s.chemical2YieldWashes,
+        meterBaselineKwh: s.meterBaselineKwh ? Number(s.meterBaselineKwh) : null,
+        waterPerP1Liters: s.waterPerP1Liters,
+        waterPerP2P3Liters: s.waterPerP2P3Liters,
+        electricityExtraP3Kwh: Number(s.electricityExtraP3Kwh),
+        baseKwhPerWash: s.baseKwhPerWash ? Number(s.baseKwhPerWash) : null,
+        tokenValueMkd: s.tokenValueMkd,
+        priceP1Mkd: s.priceP1Mkd,
+        priceP2Mkd: s.priceP2Mkd,
+        priceP3Mkd: s.priceP3Mkd,
+        setupCompleted: s.setupCompleted,
       });
+    } catch {
+      setLoadError("Мрежна грешка. Проверете интернет и обидете се повторно.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -86,7 +103,7 @@ export default function SettingsPage() {
       body: JSON.stringify({ quantity: qty }),
     });
     setTokenQty("1");
-    alert("Токените се зачувани");
+    alert("Жетоните се зачувани");
   }
 
   async function addExpense() {
@@ -109,10 +126,27 @@ export default function SettingsPage() {
     alert("Трошокот е зачуван");
   }
 
-  if (!form) {
+  if (loading) {
     return (
       <AppShell>
-        <p>{t("common.loading")}</p>
+        <p className="text-center text-muted">{t("common.loading")}</p>
+      </AppShell>
+    );
+  }
+
+  if (loadError || !form) {
+    return (
+      <AppShell>
+        <Card className="border-danger bg-red-50 text-center">
+          <h2 className="mb-2 text-lg font-bold text-danger">Проблем со базата</h2>
+          <p className="mb-4 text-sm">{loadError}</p>
+          <p className="mb-4 text-xs text-muted">
+            На вашиот компјутер отворете PowerShell во f:\NovaDrive и пуштете: npm run db:push
+            <br />
+            Потоа на Vercel: Deployments → Redeploy.
+          </p>
+          <Button onClick={() => load()}>Обиди повторно</Button>
+        </Card>
       </AppShell>
     );
   }
@@ -146,16 +180,17 @@ export default function SettingsPage() {
         <NumField label="Вода (MKD/m³)" value={form.waterRateMkdPerM3} onChange={(v) => set("waterRateMkdPerM3", v)} />
         <NumField label="Цена P1" value={form.priceP1Mkd} onChange={(v) => set("priceP1Mkd", v)} />
         <NumField label="Цена P2" value={form.priceP2Mkd} onChange={(v) => set("priceP2Mkd", v)} />
-        <NumField label="Цена P3 / токен" value={form.priceP3Mkd} onChange={(v) => set("priceP3Mkd", v)} />
-        <NumField label="Вредност токен" value={form.tokenValueMkd} onChange={(v) => set("tokenValueMkd", v)} />
+        <NumField label="Цена P3 / жетон" value={form.priceP3Mkd} onChange={(v) => set("priceP3Mkd", v)} />
+        <NumField label="Вредност жетон" value={form.tokenValueMkd} onChange={(v) => set("tokenValueMkd", v)} />
       </Card>
 
       <Card className="mb-4 space-y-3">
         <h3 className="font-semibold">{t("settings.chemicals")}</h3>
         <NumField label="Хемикалија 1 (MKD/канистер)" value={form.chemical1CostMkd} onChange={(v) => set("chemical1CostMkd", v)} />
         <NumField label="Хемикалија 2 (MKD/канистер)" value={form.chemical2CostMkd} onChange={(v) => set("chemical2CostMkd", v)} />
-        <NumField label="Миења/канистер Хем.1" value={form.chemical1YieldWashes ?? 0} onChange={(v) => set("chemical1YieldWashes", v || null)} />
-        <NumField label="Миења/канистер Хем.2" value={form.chemical2YieldWashes ?? 0} onChange={(v) => set("chemical2YieldWashes", v || null)} />
+        <p className="text-xs text-muted">{t("settings.chemicalYieldHint")}</p>
+        <NumField label="Миења/канистер Хем.1" value={form.chemical1YieldWashes ?? 70} onChange={(v) => set("chemical1YieldWashes", v || null)} />
+        <NumField label="Миења/канистер Хем.2" value={form.chemical2YieldWashes ?? 70} onChange={(v) => set("chemical2YieldWashes", v || null)} />
       </Card>
 
       <Card className="mb-4 space-y-3">
@@ -182,7 +217,7 @@ export default function SettingsPage() {
 
       <Card className="mb-4 space-y-3">
         <h3 className="font-semibold">{t("settings.tokenSales")}</h3>
-        <Input label="Број токени" type="number" value={tokenQty} onChange={(e) => setTokenQty(e.target.value)} />
+        <Input label="Број жетони" type="number" value={tokenQty} onChange={(e) => setTokenQty(e.target.value)} />
         <Button variant="secondary" fullWidth onClick={sellTokens}>
           {t("settings.addTokenSale")}
         </Button>
@@ -204,6 +239,23 @@ export default function SettingsPage() {
         <Input label="Забелешка" value={expenseNote} onChange={(e) => setExpenseNote(e.target.value)} />
         <Button variant="secondary" fullWidth onClick={addExpense}>
           {t("settings.addExpense")}
+        </Button>
+      </Card>
+
+      <Card className="mb-4 border-danger bg-red-50 space-y-3">
+        <h3 className="font-semibold text-danger">{t("settings.deleteAllHistory")}</h3>
+        <p className="text-xs text-muted">{t("history.deleteAllConfirm")}</p>
+        <Button
+          variant="danger"
+          fullWidth
+          onClick={async () => {
+            const confirm = prompt('Напишете ИЗБРИШИ за да потврдите:');
+            if (confirm !== "ИЗБРИШИ") return;
+            await fetch("/api/daily-entries", { method: "DELETE" });
+            alert("Историјата е избришана.");
+          }}
+        >
+          {t("history.deleteAll")}
         </Button>
       </Card>
     </AppShell>

@@ -24,7 +24,7 @@ export function Button({
   fullWidth?: boolean;
   disabled?: boolean;
   type?: "button" | "submit";
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
     <button

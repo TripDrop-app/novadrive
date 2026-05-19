@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { t } from "@/lib/i18n";
 
 export default function HistoryDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
   const [detail, setDetail] = useState<{
     entry: Record<string, unknown>;
@@ -69,8 +70,11 @@ export default function HistoryDetailPage() {
         <Row label="Хем. 1" value={formatMkd(Number(e.chemical1CostMkd))} />
         <Row label="Хем. 2" value={formatMkd(Number(e.chemical2CostMkd))} />
         <Row label={t("dashboard.netProfit")} value={formatMkd(Number(e.netProfitMkd))} large />
+        {e.meterReadingKwh != null && (
+          <Row label="Струјомер" value={`${e.meterReadingKwh} kWh`} />
+        )}
         {e.deltaKwh != null && (
-          <Row label="Δ kWh" value={String(e.deltaKwh)} />
+          <Row label="Потрошена струја (Δ)" value={`${e.deltaKwh} kWh`} />
         )}
         {e.expectedKwh != null && (
           <Row label="Очекувано kWh" value={String(e.expectedKwh)} />
@@ -105,7 +109,7 @@ export default function HistoryDetailPage() {
       )}
 
       {detail.amendments.length > 0 && (
-        <Card>
+        <Card className="mb-4">
           <h3 className="mb-2 font-semibold">{t("history.amendments")}</h3>
           {detail.amendments.map((a) => (
             <p key={a.amendedAt} className="text-xs text-muted">
@@ -114,6 +118,18 @@ export default function HistoryDetailPage() {
           ))}
         </Card>
       )}
+
+      <Button
+        variant="danger"
+        fullWidth
+        onClick={async () => {
+          if (!confirm(t("history.deleteConfirm"))) return;
+          await fetch(`/api/daily-entries/${id}`, { method: "DELETE" });
+          router.push("/history");
+        }}
+      >
+        {t("history.deleteEntry")}
+      </Button>
     </AppShell>
   );
 }

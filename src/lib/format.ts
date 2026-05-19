@@ -19,6 +19,11 @@ export function formatPct(n: number | null): string {
   return `${sign}${n.toFixed(1)}%`;
 }
 
+/** Local calendar date YYYY-MM-DD (not UTC) */
 export function todayDateStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }

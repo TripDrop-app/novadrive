@@ -152,7 +152,7 @@ export default function AnalyticsPage() {
               Просек: {data.current.avgDailyWashes.toFixed(1)}/ден · Бесплатни: {data.freeWashCount}
             </p>
             <p className="text-sm text-muted">
-              Токени: {data.current.tokens} · Кеш: {data.current.cashWashes}
+              Жетони: {data.current.tokens} · Кеш: {data.current.cashWashes}
             </p>
           </Card>
 

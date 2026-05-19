@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: "Перална — Управување со перална",
   description: "Оперативен контролен панел за самопослужна перална",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

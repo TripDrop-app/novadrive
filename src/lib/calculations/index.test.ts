@@ -70,7 +70,7 @@ describe("computeEntrySnapshot", () => {
     expect(snap.netProfitMkd).toBeLessThan(snap.grossRevenueMkd);
   });
 
-  it("falls back to expected kWh when no meter", () => {
+  it("uses zero electricity cost when no meter delta", () => {
     const snap = computeEntrySnapshot({
       counts,
       settings: defaultSettings,
@@ -80,8 +80,20 @@ describe("computeEntrySnapshot", () => {
       miscExpensesMkd: 0,
     });
     expect(snap.deltaKwh).toBeNull();
-    expect(snap.expectedKwh).not.toBeNull();
-    expect(snap.electricityCostMkd).toBeGreaterThan(0);
+    expect(snap.electricityCostMkd).toBe(0);
+  });
+
+  it("first entry delta from baseline", () => {
+    const snap = computeEntrySnapshot({
+      counts: { p1: 5, p2: 0, p3: 0 },
+      settings: defaultSettings,
+      meterReadingKwh: 6220,
+      previousMeterKwh: 6213,
+      cashCollectedMkd: 500,
+      miscExpensesMkd: 0,
+    });
+    expect(snap.deltaKwh).toBe(7);
+    expect(snap.electricityCostMkd).toBeCloseTo(7 * 17.99, 2);
   });
 });
 

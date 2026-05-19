@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { databaseErrorResponse } from "@/lib/api-error";
 import { getEntryForDate, getTokenStats, getChemicalUsageSinceLastCanister } from "@/lib/db/entries";
 import { getSettings } from "@/lib/db/settings";
 import { listDailyEntries } from "@/lib/db/entries";
@@ -39,7 +40,6 @@ export async function GET() {
       setupCompleted: settings.setupCompleted,
     });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "DATABASE_ERROR" }, { status: 500 });
+    return databaseErrorResponse(e);
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "@/components/ui/card";
@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input, NumberStepper } from "@/components/ui/input";
 import { formatMkd, todayDateStr } from "@/lib/format";
 import { t } from "@/lib/i18n";
-import { grossRevenue } from "@/lib/calculations";
+import { grossRevenue, parseSettings } from "@/lib/calculations";
+import type { CalcSettings } from "@/lib/calculations/types";
 
 type FreeWash = {
   program: 1 | 2 | 3;
@@ -23,12 +24,15 @@ export default function DailyEntryPage() {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [calcSettings, setCalcSettings] = useState<CalcSettings | null>(null);
+  const [meterBaseline, setMeterBaseline] = useState<number | null>(null);
+  const [lastMeterReading, setLastMeterReading] = useState<number | null>(null);
 
+  const [meter, setMeter] = useState("");
   const [p1, setP1] = useState(0);
   const [p2, setP2] = useState(0);
   const [p3, setP3] = useState(0);
   const [resetConfirmed, setResetConfirmed] = useState(false);
-  const [meter, setMeter] = useState("");
   const [cash, setCash] = useState("");
   const [tokens, setTokens] = useState(0);
   const [freeWashes, setFreeWashes] = useState<FreeWash[]>([]);
@@ -36,16 +40,70 @@ export default function DailyEntryPage() {
   const [fwQty, setFwQty] = useState(1);
   const [fwReason, setFwReason] = useState<FreeWash["reason"]>("testing");
 
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings) {
+          setCalcSettings(parseSettings(d.settings));
+          setMeterBaseline(
+            d.settings.meterBaselineKwh != null
+              ? Number(d.settings.meterBaselineKwh)
+              : null
+          );
+        }
+      });
+    fetch("/api/daily-entries")
+      .then((r) => r.json())
+      .then((d) => {
+        const entries = d.entries ?? [];
+        const today = todayDateStr();
+        const prev = entries.find(
+          (e: { sessionDate: string; meterReadingKwh: string | null }) =>
+            e.sessionDate < today && e.meterReadingKwh != null
+        );
+        if (prev?.meterReadingKwh != null) {
+          setLastMeterReading(Number(prev.meterReadingKwh));
+        }
+      });
+  }, []);
+
   const total = p1 + p2 + p3;
-  const expectedRevenue = grossRevenue(
-    { p1, p2, p3 },
-    { priceP1Mkd: 100, priceP2Mkd: 150, priceP3Mkd: 200 } as Parameters<typeof grossRevenue>[1]
-  );
+  const meterNum = parseFloat(meter);
+
+  const referenceMeter = lastMeterReading ?? meterBaseline;
+
+  const deltaKwh = useMemo(() => {
+    if (!meter || Number.isNaN(meterNum) || referenceMeter == null) return null;
+    return meterNum - referenceMeter;
+  }, [meter, meterNum, referenceMeter]);
+
+  const expectedRevenue = calcSettings
+    ? grossRevenue({ p1, p2, p3 }, calcSettings)
+    : p1 * 100 + p2 * 150 + p3 * 200;
+
+  const electricityCostPreview =
+    deltaKwh != null && calcSettings
+      ? deltaKwh * calcSettings.electricityRateMkd
+      : null;
+
+  function canGoNext(): boolean {
+    if (step === 1) {
+      return Boolean(meter) && !Number.isNaN(meterNum) && meterNum > 0;
+    }
+    if (step === 3) return resetConfirmed;
+    return true;
+  }
 
   async function handleSave() {
     setSaving(true);
     setError(null);
     try {
+      if (!meter || Number.isNaN(meterNum)) {
+        setError(t("daily.meterRequired"));
+        return;
+      }
+
       const res = await fetch("/api/daily-entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -55,7 +113,7 @@ export default function DailyEntryPage() {
           p2Count: p2,
           p3Count: p3,
           counterResetConfirmed: resetConfirmed,
-          meterReadingKwh: meter ? parseFloat(meter) : null,
+          meterReadingKwh: meterNum,
           cashCollectedMkd: parseFloat(cash) || 0,
           tokensCollected: tokens,
           freeWashes,
@@ -63,12 +121,12 @@ export default function DailyEntryPage() {
       });
       const data = await res.json();
       if (!res.ok) {
+        setError(data.hint ?? data.details?.join?.(", ") ?? t("common.error"));
         if (data.error === "METER_READING_TOO_LOW") {
           setError(t("daily.meterError"));
-        } else if (data.error === "ENTRY_EXISTS_FOR_DATE") {
-          setError("Внес за денес веќе постои. Уредете го од Историја.");
-        } else {
-          setError(t("common.error"));
+        }
+        if (data.error === "ENTRY_EXISTS_FOR_DATE") {
+          setError("Внес за денес веќе постои. Избришете го од Историја или уредете.");
         }
         return;
       }
@@ -99,8 +157,40 @@ export default function DailyEntryPage() {
 
       <Card className="mb-4 min-h-[280px]">
         {step === 1 && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <h2 className="text-lg font-bold">{t("daily.step1")}</h2>
+            <Input
+              label={t("daily.meterReading")}
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              value={meter}
+              onChange={(e) => setMeter(e.target.value)}
+              placeholder="6220"
+            />
+            {meterBaseline != null && (
+              <p className="text-sm text-muted">
+                {t("daily.meterBaselineHint")}: {meterBaseline} kWh
+              </p>
+            )}
+            {lastMeterReading != null && (
+              <p className="text-sm text-muted">
+                {t("daily.meterPreviousHint")}: {lastMeterReading} kWh
+              </p>
+            )}
+            {deltaKwh != null && (
+              <p className="rounded-lg bg-blue-50 p-3 text-sm font-semibold text-primary">
+                {t("daily.meterDelta")}: {deltaKwh.toFixed(1)} kWh
+                {electricityCostPreview != null &&
+                  ` ≈ ${formatMkd(electricityCostPreview)}`}
+              </p>
+            )}
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-bold">{t("daily.step2")}</h2>
             <NumberStepper label={t("daily.p1")} value={p1} onChange={setP1} />
             <NumberStepper label={t("daily.p2")} value={p2} onChange={setP2} />
             <NumberStepper label={t("daily.p3")} value={p3} onChange={setP3} />
@@ -110,9 +200,9 @@ export default function DailyEntryPage() {
           </div>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold">{t("daily.step2")}</h2>
+            <h2 className="text-lg font-bold">{t("daily.step3")}</h2>
             <label className="flex min-h-12 items-center gap-3">
               <input
                 type="checkbox"
@@ -122,21 +212,6 @@ export default function DailyEntryPage() {
               />
               <span className="text-base">{t("daily.confirmReset")}</span>
             </label>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold">{t("daily.step3")}</h2>
-            <Input
-              label={t("daily.meterReading")}
-              type="number"
-              inputMode="decimal"
-              step="0.1"
-              value={meter}
-              onChange={(e) => setMeter(e.target.value)}
-              placeholder="6321.3"
-            />
           </div>
         )}
 
@@ -205,7 +280,9 @@ export default function DailyEntryPage() {
               <ul className="space-y-1 text-sm">
                 {freeWashes.map((fw, i) => (
                   <li key={i} className="flex justify-between rounded-lg bg-slate-50 px-3 py-2">
-                    <span>P{fw.program} × {fw.quantity}</span>
+                    <span>
+                      P{fw.program} × {fw.quantity}
+                    </span>
                     <button
                       type="button"
                       className="text-danger"
@@ -223,11 +300,17 @@ export default function DailyEntryPage() {
         {step === 7 && (
           <div className="space-y-3">
             <h2 className="text-lg font-bold">{t("daily.step7")}</h2>
+            <SummaryRow label="kWh" value={meter} />
+            {deltaKwh != null && (
+              <SummaryRow
+                label={t("daily.meterDelta")}
+                value={`${deltaKwh.toFixed(1)} kWh${electricityCostPreview != null ? ` (${formatMkd(electricityCostPreview)})` : ""}`}
+              />
+            )}
             <SummaryRow label="P1 / P2 / P3" value={`${p1} / ${p2} / ${p3}`} />
             <SummaryRow label={t("daily.total")} value={String(total)} />
             <SummaryRow label={t("daily.cashCollected")} value={formatMkd(parseFloat(cash) || 0)} />
             <SummaryRow label={t("daily.tokensCollected")} value={String(tokens)} />
-            {meter && <SummaryRow label="kWh" value={meter} />}
             {freeWashes.length > 0 && (
               <SummaryRow label={t("history.freeWashes")} value={String(freeWashes.length)} />
             )}
@@ -252,7 +335,7 @@ export default function DailyEntryPage() {
           <Button
             className="flex-1"
             onClick={() => setStep(step + 1)}
-            disabled={step === 2 && !resetConfirmed}
+            disabled={!canGoNext()}
           >
             {t("daily.next")}
           </Button>

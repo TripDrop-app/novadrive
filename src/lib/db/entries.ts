@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, lt, lte, ne, sql } from "drizzle-orm";
 import { db } from "./index";
 import {
   dailyEntries,
@@ -13,18 +13,37 @@ import {
 } from "@/lib/calculations";
 import { getSettings } from "./settings";
 
-export async function getPreviousMeterReading(beforeDate: string) {
+/**
+ * Reference meter for delta: last saved reading BEFORE this session date,
+ * or settings baseline (your "zero" on the physical clock).
+ */
+export async function getPreviousMeterReading(
+  forSessionDate: string,
+  excludeEntryId?: string
+) {
+  const conditions = [
+    lt(dailyEntries.sessionDate, forSessionDate),
+    isNotNull(dailyEntries.meterReadingKwh),
+  ];
+  if (excludeEntryId) {
+    conditions.push(ne(dailyEntries.id, excludeEntryId));
+  }
+
   const rows = await db
     .select({ meterReadingKwh: dailyEntries.meterReadingKwh })
     .from(dailyEntries)
-    .where(
-      and(lte(dailyEntries.sessionDate, beforeDate), isNotNull(dailyEntries.meterReadingKwh))
-    )
+    .where(and(...conditions))
     .orderBy(desc(dailyEntries.sessionDate))
     .limit(1);
-  if (rows[0]?.meterReadingKwh) return Number(rows[0].meterReadingKwh);
+
+  if (rows[0]?.meterReadingKwh != null) {
+    return Number(rows[0].meterReadingKwh);
+  }
+
   const s = await getSettings();
-  if (s.meterBaselineKwh) return Number(s.meterBaselineKwh);
+  if (s.meterBaselineKwh != null) {
+    return Number(s.meterBaselineKwh);
+  }
   return null;
 }
 
@@ -47,7 +66,7 @@ export async function createDailyEntry(input: {
   p2Count: number;
   p3Count: number;
   counterResetConfirmed: boolean;
-  meterReadingKwh: number | null;
+  meterReadingKwh: number;
   cashCollectedMkd: number;
   tokensCollected: number;
   freeWashes: { program: 1 | 2 | 3; quantity: number; reason: "testing" | "complaint" | "family" | "other" }[];
@@ -56,11 +75,7 @@ export async function createDailyEntry(input: {
   const calcSettings = parseSettings(settingsRow);
 
   const previousMeter = await getPreviousMeterReading(input.sessionDate);
-  if (
-    input.meterReadingKwh != null &&
-    previousMeter != null &&
-    input.meterReadingKwh < previousMeter
-  ) {
+  if (previousMeter != null && input.meterReadingKwh < previousMeter) {
     throw new Error("METER_READING_TOO_LOW");
   }
 
@@ -91,7 +106,7 @@ export async function createDailyEntry(input: {
       p2Count: input.p2Count,
       p3Count: input.p3Count,
       counterResetConfirmed: input.counterResetConfirmed,
-      meterReadingKwh: input.meterReadingKwh?.toString() ?? null,
+      meterReadingKwh: input.meterReadingKwh.toString(),
       cashCollectedMkd: input.cashCollectedMkd.toString(),
       tokensCollected: input.tokensCollected,
       grossRevenueMkd: snapshot.grossRevenueMkd.toString(),
@@ -201,7 +216,7 @@ export async function amendDailyEntry(
   const p3 = Number(merged.p3Count);
   const meter =
     merged.meterReadingKwh != null ? Number(merged.meterReadingKwh) : null;
-  const previousMeter = await getPreviousMeterReading(merged.sessionDate);
+  const previousMeter = await getPreviousMeterReading(merged.sessionDate, id);
   const misc = Number(merged.miscExpensesMkd);
 
   const snapshot = computeEntrySnapshot({
@@ -278,4 +293,19 @@ export async function getChemicalUsageSinceLastCanister(type: "c1" | "c2") {
     return entries.reduce((s, e) => s + e.p1Count + e.p2Count + e.p3Count, 0);
   }
   return entries.reduce((s, e) => s + e.p2Count + e.p3Count, 0);
+}
+
+export async function deleteDailyEntry(id: string) {
+  const [deleted] = await db
+    .delete(dailyEntries)
+    .where(eq(dailyEntries.id, id))
+    .returning();
+  if (!deleted) throw new Error("NOT_FOUND");
+  return deleted;
+}
+
+export async function deleteAllDailyEntries() {
+  await db.delete(freeWashes);
+  await db.delete(entryAmendments);
+  await db.delete(dailyEntries);
 }

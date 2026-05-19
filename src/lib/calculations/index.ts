@@ -32,13 +32,23 @@ export function expectedKwh(
   );
 }
 
+/** Electricity cost uses actual meter delta only (never estimated kWh for billing). */
 export function electricityCost(
   deltaKwh: number | null,
-  expected: number | null,
+  _expected: number | null,
   settings: CalcSettings
 ): number {
-  const kwh = deltaKwh ?? expected ?? 0;
-  return kwh * settings.electricityRateMkd;
+  if (deltaKwh == null || deltaKwh < 0) return 0;
+  return deltaKwh * settings.electricityRateMkd;
+}
+
+/** kWh consumed this session = today's clock − (last entry or settings baseline). */
+export function meterDeltaKwh(
+  meterReadingKwh: number,
+  previousMeterKwh: number | null
+): number | null {
+  if (previousMeterKwh == null) return null;
+  return meterReadingKwh - previousMeterKwh;
 }
 
 export function chemical1CostPerSession(

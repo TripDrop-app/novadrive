@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { createDailyEntry, listDailyEntries } from "@/lib/db/entries";
+import { ZodError } from "zod";
+import { databaseErrorResponse } from "@/lib/api-error";
+import {
+  createDailyEntry,
+  deleteAllDailyEntries,
+  listDailyEntries,
+} from "@/lib/db/entries";
 import { dailyEntryCreateSchema } from "@/lib/validators";
 
 export async function GET(request: Request) {
@@ -25,21 +31,45 @@ export async function POST(request: Request) {
       p2Count: parsed.p2Count,
       p3Count: parsed.p3Count,
       counterResetConfirmed: parsed.counterResetConfirmed,
-      meterReadingKwh: parsed.meterReadingKwh ?? null,
+      meterReadingKwh: parsed.meterReadingKwh,
       cashCollectedMkd: parsed.cashCollectedMkd,
       tokensCollected: parsed.tokensCollected,
       freeWashes: parsed.freeWashes,
     });
     return NextResponse.json({ entry }, { status: 201 });
   } catch (e) {
+    if (e instanceof ZodError) {
+      return NextResponse.json(
+        {
+          error: "VALIDATION_ERROR",
+          hint: "Проверете ги полињата (струјомер, броеви).",
+          details: e.issues.map((i) => i.message),
+        },
+        { status: 400 }
+      );
+    }
     const msg = e instanceof Error ? e.message : "UNKNOWN";
     if (msg === "METER_READING_TOO_LOW") {
-      return NextResponse.json({ error: msg }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: msg,
+          hint: "Читањето мора да е поголемо од базното/претходното.",
+        },
+        { status: 400 }
+      );
     }
     if (msg === "ENTRY_EXISTS_FOR_DATE") {
       return NextResponse.json({ error: msg }, { status: 409 });
     }
-    console.error(e);
-    return NextResponse.json({ error: "VALIDATION_ERROR" }, { status: 400 });
+    return databaseErrorResponse(e);
+  }
+}
+
+export async function DELETE() {
+  try {
+    await deleteAllDailyEntries();
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return databaseErrorResponse(e);
   }
 }

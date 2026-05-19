@@ -42,11 +42,19 @@ interface DashboardData {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then(setData)
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) {
+          setLoadError(json.hint ?? "Проблем со базата на податоци.");
+          return;
+        }
+        setData(json);
+      })
+      .catch(() => setLoadError("Мрежна грешка."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -54,6 +62,17 @@ export default function DashboardPage() {
     return (
       <AppShell>
         <p className="text-center text-muted">{t("common.loading")}</p>
+      </AppShell>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppShell>
+        <Card className="border-danger bg-red-50 text-center">
+          <h2 className="mb-2 text-lg font-bold text-danger">Проблем со базата</h2>
+          <p className="text-sm">{loadError}</p>
+        </Card>
       </AppShell>
     );
   }
