@@ -37,3 +37,12 @@ select,
 textarea {
   font-size: 16px;
 }
+
+/* Smoother chart rendering on mobile */
+.recharts-wrapper {
+  touch-action: pan-y;
+}
+
+.recharts-surface {
+  overflow: visible;
+}

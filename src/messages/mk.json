@@ -37,7 +37,21 @@
     "costChem2": "Хемикалија 2",
     "costElectricity": "Струја (дел)",
     "costMisc": "Други трошоци",
-    "electricityShare": "Дел од струјата за денот"
+    "electricityShare": "Дел од струјата за денот",
+    "chartsTitle": "Преглед",
+    "chartsMore": "Цела аналитика",
+    "chartsEmpty": "Графикони",
+    "chartsEmptyHint": "По првиот дневен внес ќе видите трендови и графикони.",
+    "chartTrend14": "Приход и профит — 14 дена",
+    "chartTrend14Sub": "Мазни криви од дневните внеси",
+    "weekRevenue": "Недела приход",
+    "weekProfit": "Недела профит",
+    "weekWashes": "Недела миења",
+    "chartWeekMix": "Миења по програма",
+    "chartWeekMixSub": "Оваа недела",
+    "chartWeekProfit": "Профит по програма",
+    "chartWeekProfitSub": "P3 вклучува повеќе струја (сушење)",
+    "chartWeekRevenue": "Приход по програма"
   },
   "daily": {
     "title": "Дневен внес",
@@ -90,6 +104,7 @@
   },
   "analytics": {
     "title": "Аналитика",
+    "subtitle": "Мазни графикони за приход, трошоци и профит",
     "period": {
       "day": "Ден",
       "week": "Недела",
@@ -102,7 +117,25 @@
     "costs": "Трошоци",
     "profit": "Профит",
     "records": "Рекорди",
-    "comparison": "Споредба"
+    "comparison": "Споредба",
+    "daysWithEntry": "дена со внес",
+    "chartTrend": "Приход и профит",
+    "chartWashes": "Миења по ден",
+    "chartRevenuePrograms": "Приход по програма",
+    "chartProfitPrograms": "Профит по програма",
+    "chartProfitProgramsSub": "Струјата за P3 е повисока (сушење)",
+    "chartWashMix": "Удел на миења",
+    "chartCosts": "Структура на трошоци",
+    "chartWeekday": "По ден од неделата",
+    "chartWeekdaySub": "Столбови = приход, линија = профит",
+    "electricityNote": "Струја (вкупно)",
+    "thisPeriod": "Овој период",
+    "prevPeriod": "Претходен период",
+    "bestRevenue": "Најдобар приход",
+    "mostWashes": "Најмногу миења",
+    "bestProfit": "Најдобар профит",
+    "bestDow": "Најдобар ден",
+    "freeWashes": "Бесплатни миења"
   },
   "settings": {
     "title": "Поставки",

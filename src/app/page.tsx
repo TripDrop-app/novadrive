@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Metric, ProgressBar } from "@/components/ui/metric";
 import { ProgramEconomics } from "@/components/dashboard/program-economics";
+import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
+import type { DashboardChartsProps } from "@/components/dashboard/dashboard-charts";
 import { formatMkd, formatNumber } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import type { ProgramBreakdown } from "@/lib/calculations";
@@ -41,6 +43,7 @@ interface DashboardData {
   setupCompleted: boolean;
   programBreakdown: ProgramBreakdown[] | null;
   unitEconomics: ProgramBreakdown[] | null;
+  charts: DashboardChartsProps;
 }
 
 export default function DashboardPage() {
@@ -162,6 +165,8 @@ export default function DashboardPage() {
       {!entry && data.unitEconomics && (
         <ProgramEconomics rows={data.unitEconomics} reference />
       )}
+
+      {data.charts && <DashboardCharts {...data.charts} />}
 
       <Card className="mb-4 space-y-4">
         {data.chemical.c1Yield > 0 && data.chemical.c1Remaining != null && (

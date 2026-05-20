@@ -1,18 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "@/components/ui/card";
-import { Metric, PctBadge } from "@/components/ui/metric";
+import { PctBadge } from "@/components/ui/metric";
 import {
-  RevenueBarChart,
-  TrendLineChart,
-  WashDonutChart,
-  CostStackChart,
+  RevenueProfitAreaChart,
+  WashesAreaChart,
+  ProgramBarChart,
+  ProgramDonutChart,
+  CostBreakdownChart,
+  WeekdayBarChart,
 } from "@/components/charts/analytics-charts";
+import { ChartCard } from "@/components/charts/chart-shell";
 import { formatMkd, formatNumber } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import { shiftPeriod, type PeriodType } from "@/lib/analytics";
+import type { ProgramChartPoint, TrendPoint, WeekdayPoint } from "@/lib/analytics/series";
 
 interface AnalyticsData {
   period: PeriodType;
@@ -49,8 +54,12 @@ interface AnalyticsData {
     washes: number | null;
     costs: number | null;
   };
-  revenueByProgram: { p1: number; p2: number; p3: number };
-  trend: { date: string; revenue: number; profit: number; washes: number }[];
+  revenueByProgramChart: ProgramChartPoint[];
+  washMixChart: ProgramChartPoint[];
+  programProfitChart: ProgramChartPoint[];
+  costChart: { name: string; value: number; fill: string }[];
+  weekdayChart: WeekdayPoint[];
+  trendFilled: TrendPoint[];
   records: {
     bestRevenueDay: { date: string; value: number };
     mostWashesDay: { date: string; value: number };
@@ -91,16 +100,19 @@ export default function AnalyticsPage() {
 
   return (
     <AppShell>
-      <h2 className="mb-4 text-xl font-bold">{t("analytics.title")}</h2>
+      <h2 className="mb-1 text-xl font-bold">{t("analytics.title")}</h2>
+      <p className="mb-4 text-xs text-muted">{t("analytics.subtitle")}</p>
 
-      <div className="mb-4 flex gap-1 rounded-xl bg-slate-100 p-1">
+      <div className="mb-4 flex gap-1 rounded-2xl bg-slate-100/80 p-1 shadow-inner">
         {PERIODS.map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => setPeriod(p)}
-            className={`flex-1 rounded-lg py-2 text-xs font-semibold ${
-              period === p ? "bg-white text-primary shadow-sm" : "text-muted"
+            className={`flex-1 rounded-xl py-2.5 text-xs font-semibold transition-all duration-300 ${
+              period === p
+                ? "bg-white text-primary shadow-md"
+                : "text-muted hover:text-foreground"
             }`}
           >
             {t(`analytics.period.${p}`)}
@@ -108,107 +120,119 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      <div className="mb-4 flex items-center justify-between">
-        <button type="button" className="min-h-11 min-w-11 text-2xl text-primary" onClick={() => shift(-1)}>
+      <div className="mb-5 flex items-center justify-between rounded-2xl bg-gradient-to-r from-slate-50 to-white px-2 py-1 shadow-sm">
+        <button
+          type="button"
+          className="flex h-11 w-11 items-center justify-center rounded-xl text-xl text-primary transition hover:bg-primary/10"
+          onClick={() => shift(-1)}
+        >
           ←
         </button>
-        <span className="text-sm font-semibold">{data?.label ?? "..."}</span>
-        <button type="button" className="min-h-11 min-w-11 text-2xl text-primary" onClick={() => shift(1)}>
+        <span className="text-center text-sm font-bold">{data?.label ?? "..."}</span>
+        <button
+          type="button"
+          className="flex h-11 w-11 items-center justify-center rounded-xl text-xl text-primary transition hover:bg-primary/10"
+          onClick={() => shift(1)}
+        >
           →
         </button>
       </div>
 
       {loading || !data ? (
-        <p className="text-muted">{t("common.loading")}</p>
+        <p className="animate-pulse text-muted">{t("common.loading")}</p>
       ) : (
-        <div className="space-y-4">
-          <Card>
-            <div className="mb-2 flex items-center justify-between">
-              <span className="font-semibold">{t("analytics.revenue")}</span>
-              <PctBadge value={data.comparison.revenue} />
-            </div>
-            <p className="text-2xl font-bold text-primary">{formatMkd(data.current.grossRevenue)}</p>
-            <p className="text-xs text-muted">{t("analytics.vsPrevious")}</p>
-          </Card>
-
-          <Card>
-            <div className="mb-2 flex items-center justify-between">
-              <span className="font-semibold">{t("analytics.profit")}</span>
-              <PctBadge value={data.comparison.profit} />
-            </div>
-            <p className="text-2xl font-bold text-success">{formatMkd(data.current.netProfit)}</p>
-            <p className="text-sm text-muted">
-              Маржа: {data.current.profitMargin.toFixed(1)}% · {formatMkd(data.current.profitPerWash)}/миење
-            </p>
-          </Card>
-
-          <Card>
-            <div className="mb-2 flex items-center justify-between">
-              <span className="font-semibold">{t("analytics.washes")}</span>
-              <PctBadge value={data.comparison.washes} />
-            </div>
-            <p className="text-xl font-bold">{formatNumber(data.current.paid)} платени</p>
-            <p className="text-sm text-muted">
-              Просек: {data.current.avgDailyWashes.toFixed(1)}/ден · Бесплатни: {data.freeWashCount}
-            </p>
-            <p className="text-sm text-muted">
-              Жетони: {data.current.tokens} · Кеш: {data.current.cashWashes}
-            </p>
-          </Card>
-
-          <Card>
-            <h3 className="mb-2 font-semibold">Приход по програма</h3>
-            <RevenueBarChart
-              data={[
-                { name: "P1", value: data.revenueByProgram.p1 },
-                { name: "P2", value: data.revenueByProgram.p2 },
-                { name: "P3", value: data.revenueByProgram.p3 },
-              ]}
+        <div className="space-y-4 pb-4">
+          <div className="grid grid-cols-2 gap-3">
+            <KpiTile
+              label={t("analytics.revenue")}
+              value={formatMkd(data.current.grossRevenue)}
+              pct={data.comparison.revenue}
+              gradient="from-primary to-blue-400"
             />
-          </Card>
+            <KpiTile
+              label={t("analytics.profit")}
+              value={formatMkd(data.current.netProfit)}
+              pct={data.comparison.profit}
+              gradient="from-emerald-600 to-emerald-400"
+            />
+            <KpiTile
+              label={t("analytics.washes")}
+              value={formatNumber(data.current.paid)}
+              pct={data.comparison.washes}
+              gradient="from-violet-600 to-violet-400"
+              sub={`${data.current.avgDailyWashes.toFixed(1)}/ден`}
+            />
+            <KpiTile
+              label={t("analytics.costs")}
+              value={formatMkd(data.current.totalCost)}
+              pct={data.comparison.costs}
+              gradient="from-slate-600 to-slate-400"
+              sub={formatMkd(data.current.costPerWash) + "/миење"}
+            />
+          </div>
 
-          <Card>
-            <h3 className="mb-2 font-semibold">Миења по програма</h3>
-            <WashDonutChart p1={data.current.p1} p2={data.current.p2} p3={data.current.p3} />
-          </Card>
-
-          {data.trend.length > 1 && (
-            <Card>
-              <h3 className="mb-2 font-semibold">Тренд на приход</h3>
-              <TrendLineChart data={data.trend} />
-            </Card>
+          {data.trendFilled.length > 0 && (
+            <ChartCard
+              title={t("analytics.chartTrend")}
+              subtitle={`${t("analytics.vsPrevious")} · ${data.current.entryCount} ${t("analytics.daysWithEntry")}`}
+              accent="blue"
+              className="shadow-lg shadow-primary/10"
+            >
+              <RevenueProfitAreaChart data={data.trendFilled} height={260} />
+            </ChartCard>
           )}
 
-          <Card>
-            <div className="mb-2 flex items-center justify-between">
-              <span className="font-semibold">{t("analytics.costs")}</span>
-              <PctBadge value={data.comparison.costs} />
-            </div>
-            <CostStackChart
-              water={data.current.waterCost}
-              electricity={data.current.electricityCost}
-              chemical1={data.current.chemical1Cost}
-              chemical2={data.current.chemical2Cost}
-              misc={data.current.miscCost}
-            />
-            <p className="mt-2 text-sm text-muted">
-              По миење: {formatMkd(data.current.costPerWash)}
-            </p>
-            <p className="text-sm text-muted">
-              Струја: {data.current.deltaKwh.toFixed(1)} kWh (очекувано: {data.current.expectedKwh.toFixed(1)})
-            </p>
-          </Card>
+          {data.trendFilled.length > 1 && (
+            <ChartCard title={t("analytics.chartWashes")} accent="violet">
+              <WashesAreaChart data={data.trendFilled} height={180} />
+            </ChartCard>
+          )}
 
-          <Card>
-            <h3 className="mb-2 font-semibold">{t("analytics.comparison")}</h3>
+          <ChartCard title={t("analytics.chartRevenuePrograms")} accent="blue">
+            <ProgramBarChart data={data.revenueByProgramChart} height={220} />
+          </ChartCard>
+
+          <ChartCard title={t("analytics.chartProfitPrograms")} subtitle={t("analytics.chartProfitProgramsSub")} accent="green">
+            <ProgramBarChart
+              data={data.programProfitChart}
+              dataKey="profit"
+              name="Профит"
+              height={220}
+            />
+          </ChartCard>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ChartCard title={t("analytics.chartWashMix")} accent="violet">
+              <ProgramDonutChart
+                data={data.washMixChart}
+                height={220}
+                centerLabel={String(data.current.paid)}
+              />
+            </ChartCard>
+            <ChartCard title={t("analytics.chartCosts")} accent="slate">
+              <CostBreakdownChart data={data.costChart} height={220} />
+              <p className="px-3 pb-2 text-center text-xs text-muted">
+                {t("analytics.electricityNote")}: {data.current.deltaKwh.toFixed(1)} kWh
+              </p>
+            </ChartCard>
+          </div>
+
+          {data.weekdayChart.some((d) => d.revenue > 0) && (
+            <ChartCard title={t("analytics.chartWeekday")} subtitle={t("analytics.chartWeekdaySub")} accent="blue">
+              <WeekdayBarChart data={data.weekdayChart} height={220} />
+            </ChartCard>
+          )}
+
+          <Card className="space-y-2 bg-gradient-to-br from-slate-50 to-white">
+            <h3 className="font-semibold">{t("analytics.comparison")}</h3>
             <CompareRow
-              label="Овој период"
+              label={t("analytics.thisPeriod")}
               revenue={data.sideBySide.current.grossRevenue}
               profit={data.sideBySide.current.netProfit}
               washes={data.sideBySide.current.paid}
             />
             <CompareRow
-              label="Претходен период"
+              label={t("analytics.prevPeriod")}
               revenue={data.sideBySide.previousPeriod.grossRevenue}
               profit={data.sideBySide.previousPeriod.netProfit}
               washes={data.sideBySide.previousPeriod.paid}
@@ -216,19 +240,64 @@ export default function AnalyticsPage() {
           </Card>
 
           {data.records && (
-            <Card>
+            <Card className="border-l-4 border-l-warning bg-amber-50/50">
               <h3 className="mb-2 font-semibold">{t("analytics.records")}</h3>
-              <p className="text-sm">Најдобар приход: {data.records.bestRevenueDay.date} — {formatMkd(data.records.bestRevenueDay.value)}</p>
-              <p className="text-sm">Најмногу миења: {data.records.mostWashesDay.date} — {data.records.mostWashesDay.value}</p>
-              <p className="text-sm">Најдобар профит: {data.records.bestProfitDay.date} — {formatMkd(data.records.bestProfitDay.value)}</p>
-              <p className="mt-2 text-sm text-muted">
-                Најдобар ден: {data.bestDayOfWeek.dayName} (просек {formatMkd(data.bestDayOfWeek.avgRevenue)})
+              <p className="text-sm">
+                {t("analytics.bestRevenue")}: {data.records.bestRevenueDay.date} —{" "}
+                {formatMkd(data.records.bestRevenueDay.value)}
+              </p>
+              <p className="text-sm">
+                {t("analytics.mostWashes")}: {data.records.mostWashesDay.date} —{" "}
+                {data.records.mostWashesDay.value}
+              </p>
+              <p className="text-sm">
+                {t("analytics.bestProfit")}: {data.records.bestProfitDay.date} —{" "}
+                {formatMkd(data.records.bestProfitDay.value)}
+              </p>
+              <p className="mt-2 text-sm font-medium text-primary">
+                {t("analytics.bestDow")}: {data.bestDayOfWeek.dayName} (
+                {formatMkd(data.bestDayOfWeek.avgRevenue)} просек)
+              </p>
+              <p className="text-xs text-muted">
+                {t("analytics.freeWashes")}: {data.freeWashCount}
               </p>
             </Card>
           )}
+
+          <Link
+            href="/"
+            className="block rounded-xl border border-border bg-white py-3 text-center text-sm font-semibold text-primary"
+          >
+            ← {t("nav.dashboard")}
+          </Link>
         </div>
       )}
     </AppShell>
+  );
+}
+
+function KpiTile({
+  label,
+  value,
+  pct,
+  gradient,
+  sub,
+}: {
+  label: string;
+  value: string;
+  pct: number | null;
+  gradient: string;
+  sub?: string;
+}) {
+  return (
+    <div className={`rounded-2xl bg-gradient-to-br ${gradient} p-4 text-white shadow-lg`}>
+      <div className="mb-1 flex items-start justify-between gap-1">
+        <span className="text-[10px] font-semibold uppercase tracking-wide opacity-90">{label}</span>
+        <PctBadge value={pct} light />
+      </div>
+      <p className="text-xl font-bold leading-tight">{value}</p>
+      {sub && <p className="mt-1 text-[10px] opacity-85">{sub}</p>}
+    </div>
   );
 }
 

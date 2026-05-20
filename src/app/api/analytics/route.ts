@@ -14,6 +14,15 @@ import {
   bestDayOfWeek,
   type PeriodType,
 } from "@/lib/analytics";
+import {
+  buildTrendSeries,
+  weekdaySeries,
+  programRevenueSeries,
+  programWashSeries,
+  aggregateProgramProfit,
+  costBreakdownSeries,
+} from "@/lib/analytics/series";
+import { differenceInDays, format } from "date-fns";
 import { db } from "@/lib/db";
 import { freeWashes } from "@/lib/db/schema";
 
@@ -70,6 +79,10 @@ export async function GET(request: Request) {
       prevWeekBounds.end
     );
 
+    const rev = revenueByProgram(currentEntries, prices);
+    const trendRaw = dailyTrend(currentEntries);
+    const endStr = format(bounds.end, "yyyy-MM-dd");
+
     return NextResponse.json({
       period,
       label: bounds.label,
@@ -77,8 +90,29 @@ export async function GET(request: Request) {
       current,
       previous,
       comparison,
-      revenueByProgram: revenueByProgram(currentEntries, prices),
-      trend: dailyTrend(currentEntries),
+      revenueByProgram: rev,
+      revenueByProgramChart: programRevenueSeries(rev.p1, rev.p2, rev.p3),
+      washMixChart: programWashSeries(current.p1, current.p2, current.p3),
+      programProfitChart: aggregateProgramProfit(currentEntries, settings),
+      costChart: costBreakdownSeries({
+        water: current.waterCost,
+        electricity: current.electricityCost,
+        chemical1: current.chemical1Cost,
+        chemical2: current.chemical2Cost,
+        misc: current.miscCost,
+      }),
+      weekdayChart: weekdaySeries(currentEntries),
+      trend: trendRaw,
+      trendFilled: buildTrendSeries(
+        currentEntries,
+        period === "day"
+          ? 14
+          : Math.min(
+              period === "year" ? 90 : differenceInDays(bounds.end, bounds.start) + 1,
+              period === "week" ? 7 : period === "month" ? 31 : 90
+            ),
+        endStr
+      ),
       records: findRecords(allEntries),
       bestDayOfWeek: bestDayOfWeek(currentEntries),
       freeWashCount,

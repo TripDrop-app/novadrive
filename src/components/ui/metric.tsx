@@ -22,14 +22,20 @@ export function Metric({
   );
 }
 
-export function PctBadge({ value }: { value: number | null }) {
+export function PctBadge({ value, light }: { value: number | null; light?: boolean }) {
   if (value == null) return null;
   const positive = value >= 0;
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold",
-        positive ? "bg-green-100 text-success" : "bg-red-100 text-danger"
+        light
+          ? positive
+            ? "bg-white/25 text-white"
+            : "bg-white/25 text-red-100"
+          : positive
+            ? "bg-green-100 text-success"
+            : "bg-red-100 text-danger"
       )}
     >
       {positive ? "↑" : "↓"} {Math.abs(value).toFixed(1)}%
