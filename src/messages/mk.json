@@ -23,7 +23,21 @@
     "lastEntry": "Последен внес",
     "startEntry": "Започни денесен внес",
     "noEntryToday": "Нема внес за денес",
-    "lowChemicalWarning": "Ниско ниво на хемикалија!"
+    "lowChemicalWarning": "Ниско ниво на хемикалија!",
+    "programEconomicsTitle": "Трошоци и профит по програма",
+    "unitEconomicsTitle": "Проценка по миење (без денешен внес)",
+    "unitEconomicsHint": "Проценка за 1 миење по програма — внесете денешен внес за реални броеви.",
+    "electricitySplitHint": "Струјата е од струјомерот за денот, распоредена по тежина (P3 вклучува сушење).",
+    "washCount": "миења",
+    "programRevenue": "Приход",
+    "programTotalCost": "Вкупно трошоци",
+    "programProfit": "Профит",
+    "costWater": "Вода",
+    "costChem1": "Хемикалија 1",
+    "costChem2": "Хемикалија 2",
+    "costElectricity": "Струја (дел)",
+    "costMisc": "Други трошоци",
+    "electricityShare": "Дел од струјата за денот"
   },
   "daily": {
     "title": "Дневен внес",

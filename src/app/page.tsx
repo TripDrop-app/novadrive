@@ -6,8 +6,10 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Metric, ProgressBar } from "@/components/ui/metric";
+import { ProgramEconomics } from "@/components/dashboard/program-economics";
 import { formatMkd, formatNumber } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import type { ProgramBreakdown } from "@/lib/calculations";
 
 interface DashboardData {
   today: string;
@@ -37,6 +39,8 @@ interface DashboardData {
   };
   lastEntry: { sessionDate: string; createdAt: string } | null;
   setupCompleted: boolean;
+  programBreakdown: ProgramBreakdown[] | null;
+  unitEconomics: ProgramBreakdown[] | null;
 }
 
 export default function DashboardPage() {
@@ -148,7 +152,15 @@ export default function DashboardPage() {
               </p>
             )}
           </Card>
+
+          {data.programBreakdown && (
+            <ProgramEconomics rows={data.programBreakdown} />
+          )}
         </>
+      )}
+
+      {!entry && data.unitEconomics && (
+        <ProgramEconomics rows={data.unitEconomics} reference />
       )}
 
       <Card className="mb-4 space-y-4">

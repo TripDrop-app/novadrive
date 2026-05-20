@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse } from "@/lib/api-error";
+import {
+  computeProgramBreakdowns,
+  computeUnitEconomics,
+  parseSettings,
+} from "@/lib/calculations";
 import { getEntryForDate, getTokenStats, getChemicalUsageSinceLastCanister } from "@/lib/db/entries";
 import { getSettings } from "@/lib/db/settings";
 import { listDailyEntries } from "@/lib/db/entries";
@@ -22,9 +27,32 @@ export async function GET() {
     const entries = await listDailyEntries();
     const lastEntry = entries[0] ?? null;
 
+    const calcSettings = parseSettings(settings);
+    let programBreakdown = null;
+    let unitEconomics = null;
+
+    if (todayEntry) {
+      programBreakdown = computeProgramBreakdowns({
+        counts: {
+          p1: todayEntry.p1Count,
+          p2: todayEntry.p2Count,
+          p3: todayEntry.p3Count,
+        },
+        settings: calcSettings,
+        electricityCostMkd: Number(todayEntry.electricityCostMkd),
+        chemical1CostMkd: Number(todayEntry.chemical1CostMkd),
+        chemical2CostMkd: Number(todayEntry.chemical2CostMkd),
+        miscExpensesMkd: Number(todayEntry.miscExpensesMkd),
+      });
+    } else {
+      unitEconomics = computeUnitEconomics(calcSettings);
+    }
+
     return NextResponse.json({
       today,
       todayEntry,
+      programBreakdown,
+      unitEconomics,
       tokenStats,
       chemical: {
         c1Used,

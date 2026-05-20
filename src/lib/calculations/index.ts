@@ -1,5 +1,12 @@
 import type { CalcSettings, EntrySnapshot, WashCounts } from "./types";
 
+export {
+  allocateElectricityByProgram,
+  computeProgramBreakdowns,
+  computeUnitEconomics,
+  type ProgramBreakdown,
+} from "./per-program";
+
 export function totalPaidWashes(counts: WashCounts): number {
   return counts.p1 + counts.p2 + counts.p3;
 }
