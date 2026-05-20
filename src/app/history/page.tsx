@@ -34,12 +34,14 @@ export default function HistoryPage() {
     load();
   }, []);
 
-  async function deleteEntry(id: string, e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
+  async function deleteEntry(id: string) {
     if (!confirm(t("history.deleteConfirm"))) return;
-    await fetch(`/api/daily-entries/${id}`, { method: "DELETE" });
-    load();
+    const res = await fetch(`/api/daily-entries/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      load();
+    } else {
+      alert(t("common.error"));
+    }
   }
 
   return (
@@ -53,8 +55,11 @@ export default function HistoryPage() {
         <ul className="space-y-3">
           {entries.map((e) => (
             <li key={e.id}>
-              <Link href={`/history/${e.id}`}>
-                <Card className="flex items-center justify-between active:bg-slate-50">
+              <Card className="overflow-hidden p-0">
+                <Link
+                  href={`/history/${e.id}`}
+                  className="flex items-center justify-between px-4 py-3 active:bg-slate-50"
+                >
                   <div>
                     <p className="font-semibold">
                       {new Date(e.sessionDate + "T12:00:00").toLocaleDateString("mk-MK", {
@@ -69,21 +74,22 @@ export default function HistoryPage() {
                       P3:{e.p3Count}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-right">
-                      <p className="font-bold text-primary">{formatMkd(Number(e.netProfitMkd))}</p>
-                      <p className="text-xs text-muted">{formatMkd(Number(e.grossRevenueMkd))}</p>
-                    </div>
-                    <Button
-                      variant="danger"
-                      className="!min-h-10 !px-3 !py-2 text-xs"
-                      onClick={(ev) => deleteEntry(e.id, ev)}
-                    >
-                      {t("common.delete")}
-                    </Button>
+                  <div className="text-right">
+                    <p className="font-bold text-primary">{formatMkd(Number(e.netProfitMkd))}</p>
+                    <p className="text-xs text-muted">{formatMkd(Number(e.grossRevenueMkd))}</p>
                   </div>
-                </Card>
-              </Link>
+                </Link>
+                <div className="border-t border-border px-4 py-2">
+                  <Button
+                    type="button"
+                    variant="danger"
+                    fullWidth
+                    onClick={() => deleteEntry(e.id)}
+                  >
+                    {t("history.deleteEntry")}
+                  </Button>
+                </div>
+              </Card>
             </li>
           ))}
         </ul>
