@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SwCleanup } from "@/components/pwa/sw-cleanup";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,7 +32,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="mk">
-      <body>{children}</body>
+      <body>
+        <SwCleanup />
+        {children}
+      </body>
     </html>
   );
 }
