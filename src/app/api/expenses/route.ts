@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { expenses } from "@/lib/db/schema";
 import { expenseSchema } from "@/lib/validators";
+import { syncDailyEntryMiscForDate } from "@/lib/db/entries";
 import { desc } from "drizzle-orm";
 
 export async function GET() {
@@ -30,6 +31,10 @@ export async function POST(request: Request) {
         canisterCount: parsed.canisterCount ?? null,
       })
       .returning();
+
+    if (parsed.category !== "chemicals") {
+      await syncDailyEntryMiscForDate(parsed.expenseDate);
+    }
 
     return NextResponse.json({ expense }, { status: 201 });
   } catch (e) {

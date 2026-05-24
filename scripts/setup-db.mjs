@@ -43,15 +43,25 @@ try {
   process.exit(1);
 }
 
-const migration = readFileSync(join(__dirname, "..", "drizzle", "0000_init.sql"), "utf8");
-const statements = migration
-  .split(";")
-  .map((s) => s.trim())
-  .filter((s) => s.length > 0 && !s.startsWith("--"));
+const migrationDir = join(__dirname, "..", "drizzle");
+const { readdirSync } = await import("fs");
+const sqlFiles = readdirSync(migrationDir)
+  .filter((f) => f.endsWith(".sql"))
+  .sort();
 
-console.log(`Running ${statements.length} SQL statements...`);
+let allStatements = [];
+for (const file of sqlFiles) {
+  const migration = readFileSync(join(migrationDir, file), "utf8");
+  const statements = migration
+    .split(";")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && !s.startsWith("--"));
+  allStatements = allStatements.concat(statements);
+}
 
-for (const stmt of statements) {
+console.log(`Running ${allStatements.length} SQL statements from ${sqlFiles.length} file(s)...`);
+
+for (const stmt of allStatements) {
   try {
     await client.query(stmt);
     console.log("OK:", stmt.slice(0, 55).replace(/\n/g, " ") + "...");

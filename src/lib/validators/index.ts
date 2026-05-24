@@ -53,6 +53,17 @@ export const expenseSchema = z.object({
   canisterCount: z.coerce.number().int().positive().optional(),
 });
 
+export const incomeEntrySchema = z.object({
+  incomeDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  amountMkd: z.coerce.number().positive(),
+  note: z.string().optional(),
+});
+
+export const chemicalPourSchema = z.object({
+  chemicalType: z.enum(["c1", "c2"]),
+  expenseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
 export const entryAmendSchema = z.object({
   fieldName: z.string(),
   newValue: z.union([z.string(), z.number(), z.boolean()]),

@@ -32,10 +32,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [tokenQty, setTokenQty] = useState("1");
-  const [expenseAmount, setExpenseAmount] = useState("");
-  const [expenseNote, setExpenseNote] = useState("");
-  const [expenseCategory, setExpenseCategory] = useState<"equipment" | "repairs" | "misc" | "chemicals">("misc");
 
   async function load() {
     setLoading(true);
@@ -93,37 +89,6 @@ export default function SettingsPage() {
     });
     setSaving(false);
     load();
-  }
-
-  async function sellTokens() {
-    const qty = parseInt(tokenQty) || 1;
-    await fetch("/api/token-sales", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity: qty }),
-    });
-    setTokenQty("1");
-    alert("Жетоните се зачувани");
-  }
-
-  async function addExpense() {
-    const amount = parseFloat(expenseAmount);
-    if (!amount) return;
-    await fetch("/api/expenses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        expenseDate: new Date().toISOString().slice(0, 10),
-        category: expenseCategory,
-        amountMkd: amount,
-        note: expenseNote || undefined,
-        chemicalType: expenseCategory === "chemicals" ? "c1" : undefined,
-        canisterCount: expenseCategory === "chemicals" ? 1 : undefined,
-      }),
-    });
-    setExpenseAmount("");
-    setExpenseNote("");
-    alert("Трошокот е зачуван");
   }
 
   if (loading) {
@@ -214,33 +179,6 @@ export default function SettingsPage() {
       <Button fullWidth onClick={save} disabled={saving} className="mb-6">
         {saving ? t("common.loading") : t("settings.save")}
       </Button>
-
-      <Card className="mb-4 space-y-3">
-        <h3 className="font-semibold">{t("settings.tokenSales")}</h3>
-        <Input label="Број жетони" type="number" value={tokenQty} onChange={(e) => setTokenQty(e.target.value)} />
-        <Button variant="secondary" fullWidth onClick={sellTokens}>
-          {t("settings.addTokenSale")}
-        </Button>
-      </Card>
-
-      <Card className="mb-4 space-y-3">
-        <h3 className="font-semibold">{t("settings.expenses")}</h3>
-        <select
-          className="w-full min-h-12 rounded-xl border border-border px-3"
-          value={expenseCategory}
-          onChange={(e) => setExpenseCategory(e.target.value as typeof expenseCategory)}
-        >
-          <option value="misc">Разно</option>
-          <option value="equipment">Опрема</option>
-          <option value="repairs">Поправки</option>
-          <option value="chemicals">Хемикалии (канистер)</option>
-        </select>
-        <Input label="Износ (MKD)" type="number" value={expenseAmount} onChange={(e) => setExpenseAmount(e.target.value)} />
-        <Input label="Забелешка" value={expenseNote} onChange={(e) => setExpenseNote(e.target.value)} />
-        <Button variant="secondary" fullWidth onClick={addExpense}>
-          {t("settings.addExpense")}
-        </Button>
-      </Card>
 
       <Card className="mb-4 border-danger bg-red-50 space-y-3">
         <h3 className="font-semibold text-danger">{t("settings.deleteAllHistory")}</h3>

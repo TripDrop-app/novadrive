@@ -234,6 +234,7 @@ export async function amendDailyEntry(
   if ("p2Count" in updates) patch.p2Count = Number(updates.p2Count);
   if ("p3Count" in updates) patch.p3Count = Number(updates.p3Count);
   if ("meterReadingKwh" in updates) patch.meterReadingKwh = updates.meterReadingKwh != null ? String(updates.meterReadingKwh) : null;
+  if ("miscExpensesMkd" in updates) patch.miscExpensesMkd = String(updates.miscExpensesMkd);
 
   const [updated] = await db
     .update(dailyEntries)
@@ -308,4 +309,20 @@ export async function deleteAllDailyEntries() {
   await db.delete(freeWashes);
   await db.delete(entryAmendments);
   await db.delete(dailyEntries);
+}
+
+/** Recompute profit after misc expenses change for that session date */
+export async function syncDailyEntryMiscForDate(expenseDate: string) {
+  const entry = await getEntryForDate(expenseDate);
+  if (!entry) {
+    return { updated: false as const, message: "Нема дневен внес за тој датум." };
+  }
+  const misc = await getMiscExpensesForDate(expenseDate);
+  const updated = await amendDailyEntry(entry.id, { miscExpensesMkd: misc });
+  return {
+    updated: true as const,
+    sessionDate: expenseDate,
+    miscExpensesMkd: misc,
+    netProfitMkd: Number(updated.netProfitMkd),
+  };
 }

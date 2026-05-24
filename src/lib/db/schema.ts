@@ -124,6 +124,14 @@ export const expenses = pgTable("expenses", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const incomeEntries = pgTable("income_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  incomeDate: date("income_date").notNull(),
+  amountMkd: numeric("amount_mkd", { precision: 12, scale: 2 }).notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const chemicalCanisterEvents = pgTable("chemical_canister_events", {
   id: uuid("id").primaryKey().defaultRandom(),
   chemicalType: chemicalTypeEnum("chemical_type").notNull(),

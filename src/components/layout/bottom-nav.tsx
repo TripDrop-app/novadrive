@@ -8,6 +8,7 @@ import { t } from "@/lib/i18n";
 const tabs = [
   { href: "/", labelKey: "nav.dashboard", icon: HomeIcon },
   { href: "/daily", labelKey: "nav.daily", icon: PlusIcon },
+  { href: "/finances", labelKey: "nav.finances", icon: WalletIcon },
   { href: "/history", labelKey: "nav.history", icon: CalendarIcon },
   { href: "/analytics", labelKey: "nav.analytics", icon: ChartIcon },
   { href: "/settings", labelKey: "nav.settings", icon: GearIcon },
@@ -27,7 +28,7 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                "flex min-h-[56px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-xs font-medium transition",
+                "flex min-h-[56px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-[10px] font-medium transition",
                 active ? "text-primary" : "text-muted"
               )}
             >
@@ -77,6 +78,16 @@ function ChartIcon({ active }: { active: boolean }) {
       <line x1="18" y1="20" x2="18" y2="10" />
       <line x1="12" y1="20" x2="12" y2="4" />
       <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  );
+}
+
+function WalletIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? "#1A6EFF" : "#64748b"} strokeWidth="2">
+      <rect x="2" y="6" width="20" height="14" rx="2" />
+      <path d="M2 10h20" />
+      <circle cx="17" cy="14" r="1.5" fill={active ? "#1A6EFF" : "#64748b"} />
     </svg>
   );
 }
