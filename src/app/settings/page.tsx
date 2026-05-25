@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { t } from "@/lib/i18n";
+import { UsersAdmin } from "@/components/settings/users-admin";
 
 interface SettingsForm {
   electricityRateMkd: number;
@@ -32,6 +33,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -77,6 +80,14 @@ export default function SettingsPage() {
 
   useEffect(() => {
     load();
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user) {
+          setIsAdmin(d.user.isAdmin);
+          setCurrentUser(d.user.displayName || d.user.username);
+        }
+      });
   }, []);
 
   async function save() {
@@ -122,6 +133,27 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <h2 className="mb-4 text-xl font-bold">{t("settings.title")}</h2>
+
+      <Card className="mb-4 space-y-3">
+        <h3 className="font-semibold">{t("auth.account")}</h3>
+        {currentUser && (
+          <p className="text-sm text-muted">
+            {t("auth.loggedInAs")}: <span className="font-medium text-foreground">{currentUser}</span>
+          </p>
+        )}
+        <Button
+          variant="secondary"
+          fullWidth
+          onClick={async () => {
+            await fetch("/api/auth/logout", { method: "POST" });
+            window.location.href = "/login";
+          }}
+        >
+          {t("auth.logout")}
+        </Button>
+      </Card>
+
+      {isAdmin && <UsersAdmin />}
 
       {!form.setupCompleted && (
         <Card className="mb-4 border-primary bg-blue-50">

@@ -26,6 +26,15 @@ export const expenseCategoryEnum = pgEnum("expense_category", [
 
 export const chemicalTypeEnum = pgEnum("chemical_type", ["c1", "c2"]);
 
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  displayName: text("display_name"),
+  isAdmin: boolean("is_admin").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const settings = pgTable("settings", {
   id: uuid("id").primaryKey().defaultRandom(),
   electricityRateMkd: numeric("electricity_rate_mkd", { precision: 10, scale: 4 })
