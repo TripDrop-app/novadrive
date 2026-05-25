@@ -10,64 +10,38 @@ import { ProgressBar } from "@/components/ui/metric";
 import { formatMkd } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import { todayDateStr } from "@/lib/format";
+import type { LedgerLine } from "@/lib/finances/summary";
 
-type Tab = "costs" | "income";
+type Tab = "overview" | "add";
 
 interface FinancesData {
   monthLabel: string;
   totals: {
-    monthCosts: number;
-    monthIncome: number;
-    monthWashIncome: number;
-    monthTokenIncome: number;
-    monthOtherIncome: number;
-    monthNet: number;
+    moneyIn: number;
+    moneyOut: number;
+    balance: number;
+    breakdown: {
+      in: { wash: number; tokens: number; other: number };
+      out: {
+        water: number;
+        electricity: number;
+        chemical1: number;
+        chemical2: number;
+        expenses: number;
+      };
+    };
   };
+  ledger: LedgerLine[];
   tokenStats: { outstanding: number };
   chemical: {
     c1: { used: number; yield: number; remaining: number; costMkd: number };
     c2: { used: number; yield: number; remaining: number; costMkd: number };
   };
-  expenses: {
-    id: string;
-    date: string;
-    category: string;
-    amountMkd: number;
-    note: string | null;
-    chemicalType: string | null;
-  }[];
-  tokenSales: {
-    id: string;
-    date: string;
-    quantity: number;
-    amountMkd: number;
-    note: string | null;
-  }[];
-  otherIncome: {
-    id: string;
-    date: string;
-    amountMkd: number;
-    note: string | null;
-  }[];
-  washIncome: {
-    id: string;
-    date: string;
-    amountMkd: number;
-    profitMkd: number;
-    washes: number;
-  }[];
 }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  misc: "Разно",
-  equipment: "Опрема",
-  repairs: "Поправки",
-  chemicals: "Хемикалии",
-};
 
 export default function FinancesPage() {
   const [data, setData] = useState<FinancesData | null>(null);
-  const [tab, setTab] = useState<Tab>("costs");
+  const [tab, setTab] = useState<Tab>("overview");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +49,6 @@ export default function FinancesPage() {
   const [expNote, setExpNote] = useState("");
   const [expCategory, setExpCategory] = useState<"misc" | "equipment" | "repairs">("misc");
   const [expDate, setExpDate] = useState(todayDateStr());
-
   const [tokenQty, setTokenQty] = useState("1");
   const [otherAmount, setOtherAmount] = useState("");
   const [otherNote, setOtherNote] = useState("");
@@ -99,7 +72,7 @@ export default function FinancesPage() {
   }, [load]);
 
   async function pourChemical(type: "c1" | "c2") {
-    const label = type === "c1" ? "Хемикалија 1" : "Хемикалија 2";
+    const label = type === "c1" ? t("finances.chem1") : t("finances.chem2");
     if (!confirm(`${t("finances.pourConfirm")} ${label}?`)) return;
     const res = await fetch("/api/chemical-pour", {
       method: "POST",
@@ -126,6 +99,7 @@ export default function FinancesPage() {
     if (res.ok) {
       setExpAmount("");
       setExpNote("");
+      setTab("overview");
       load();
     } else alert(t("common.error"));
   }
@@ -145,6 +119,7 @@ export default function FinancesPage() {
     });
     if (res.ok) {
       setTokenQty("1");
+      setTab("overview");
       load();
     } else alert(t("common.error"));
   }
@@ -164,6 +139,7 @@ export default function FinancesPage() {
     if (res.ok) {
       setOtherAmount("");
       setOtherNote("");
+      setTab("overview");
       load();
     } else alert(t("common.error"));
   }
@@ -195,66 +171,177 @@ export default function FinancesPage() {
     );
   }
 
+  const { totals } = data;
+  const positive = totals.balance >= 0;
+
   return (
     <AppShell>
       <h2 className="mb-1 text-xl font-bold">{t("finances.title")}</h2>
       <p className="mb-4 text-xs text-muted">{data.monthLabel}</p>
 
-      <div className="mb-4 grid grid-cols-2 gap-2">
-        <SummaryTile label={t("finances.monthIncome")} value={formatMkd(data.totals.monthIncome)} positive />
-        <SummaryTile label={t("finances.monthCosts")} value={formatMkd(data.totals.monthCosts)} />
-        <SummaryTile
-          label={t("finances.monthNet")}
-          value={formatMkd(data.totals.monthNet)}
-          positive={data.totals.monthNet >= 0}
-          className="col-span-2"
-        />
-      </div>
-
-      <Card className="mb-4 space-y-4">
-        <h3 className="font-semibold">{t("finances.chemicalPour")}</h3>
-        <p className="text-xs text-muted">{t("finances.chemicalPourHint")}</p>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => pourChemical("c1")}
-            className="rounded-2xl bg-gradient-to-br from-primary to-blue-500 p-4 text-left text-white shadow-lg active:scale-[0.98]"
-          >
-            <span className="text-2xl">🧴</span>
-            <p className="mt-2 font-bold">{t("finances.chem1")}</p>
-            <p className="text-xs opacity-90">{formatMkd(data.chemical.c1.costMkd)}</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => pourChemical("c2")}
-            className="rounded-2xl bg-gradient-to-br from-violet-600 to-violet-400 p-4 text-left text-white shadow-lg active:scale-[0.98]"
-          >
-            <span className="text-2xl">🧪</span>
-            <p className="mt-2 font-bold">{t("finances.chem2")}</p>
-            <p className="text-xs opacity-90">{formatMkd(data.chemical.c2.costMkd)}</p>
-          </button>
-        </div>
-        <ProgressBar
-          label={t("dashboard.chemical1Remaining")}
-          current={data.chemical.c1.used}
-          max={data.chemical.c1.yield}
-          warning={data.chemical.c1.remaining / data.chemical.c1.yield < 0.15}
-        />
-        <ProgressBar
-          label={t("dashboard.chemical2Remaining")}
-          current={data.chemical.c2.used}
-          max={data.chemical.c2.yield}
-          warning={data.chemical.c2.remaining / data.chemical.c2.yield < 0.15}
-        />
-      </Card>
-
       <div className="mb-4 flex gap-1 rounded-xl bg-slate-100 p-1">
-        <TabBtn active={tab === "costs"} onClick={() => setTab("costs")} label={t("finances.tabCosts")} />
-        <TabBtn active={tab === "income"} onClick={() => setTab("income")} label={t("finances.tabIncome")} />
+        <TabBtn active={tab === "overview"} onClick={() => setTab("overview")} label={t("finances.tabOverview")} />
+        <TabBtn active={tab === "add"} onClick={() => setTab("add")} label={t("finances.tabAdd")} />
       </div>
 
-      {tab === "costs" ? (
+      {tab === "overview" ? (
         <>
+          <Card
+            className={`mb-4 overflow-hidden border-0 p-0 shadow-lg ${
+              positive ? "shadow-emerald-500/20" : "shadow-red-500/20"
+            }`}
+          >
+            <div
+              className={`px-4 py-6 text-center text-white ${
+                positive
+                  ? "bg-gradient-to-br from-emerald-600 to-emerald-500"
+                  : "bg-gradient-to-br from-red-600 to-red-500"
+              }`}
+            >
+              <p className="text-xs font-semibold uppercase tracking-widest opacity-90">
+                {t("finances.totalLeft")}
+              </p>
+              <p className="mt-2 text-4xl font-black tracking-tight">
+                {positive ? "+" : "−"}
+                {formatMkd(Math.abs(totals.balance))}
+              </p>
+              <p className="mt-2 text-sm opacity-90">
+                {positive ? t("finances.inProfit") : t("finances.inLoss")}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 divide-x divide-border bg-white">
+              <div className="px-4 py-4 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
+                  {t("finances.moneyIn")}
+                </p>
+                <p className="mt-1 text-xl font-bold text-success">+{formatMkd(totals.moneyIn)}</p>
+              </div>
+              <div className="px-4 py-4 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
+                  {t("finances.moneyOut")}
+                </p>
+                <p className="mt-1 text-xl font-bold text-danger">−{formatMkd(totals.moneyOut)}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="mb-4">
+            <h3 className="mb-3 text-sm font-semibold text-success">{t("finances.whereIn")}</h3>
+            <BreakdownRow label={t("finances.inWash")} amount={totals.breakdown.in.wash} positive />
+            <BreakdownRow label={t("finances.inTokens")} amount={totals.breakdown.in.tokens} positive />
+            <BreakdownRow label={t("finances.inOther")} amount={totals.breakdown.in.other} positive />
+          </Card>
+
+          <Card className="mb-4">
+            <h3 className="mb-3 text-sm font-semibold text-danger">{t("finances.whereOut")}</h3>
+            <BreakdownRow label={t("finances.outWater")} amount={totals.breakdown.out.water} />
+            <BreakdownRow label={t("finances.outElectricity")} amount={totals.breakdown.out.electricity} />
+            <BreakdownRow label={t("finances.outChem1")} amount={totals.breakdown.out.chemical1} />
+            <BreakdownRow label={t("finances.outChem2")} amount={totals.breakdown.out.chemical2} />
+            <BreakdownRow label={t("finances.outManual")} amount={totals.breakdown.out.expenses} />
+            <p className="mt-2 text-xs text-muted">{t("finances.outHint")}</p>
+          </Card>
+
+          <Card className="mb-4">
+            <h3 className="mb-3 font-semibold">{t("finances.ledgerTitle")}</h3>
+            {data.ledger.length === 0 ? (
+              <p className="text-sm text-muted">{t("finances.ledgerEmpty")}</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {data.ledger.map((line) => (
+                  <li key={line.id} className="flex items-center gap-2 py-3 first:pt-0 last:pb-0">
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                        line.direction === "in"
+                          ? "bg-green-100 text-success"
+                          : "bg-red-100 text-danger"
+                      }`}
+                    >
+                      {line.direction === "in" ? "+" : "−"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium leading-tight">{line.label}</p>
+                      <p className="text-xs text-muted">
+                        {new Date(line.date + "T12:00:00").toLocaleDateString("mk-MK")}
+                        {line.sub ? ` · ${line.sub}` : ""}
+                      </p>
+                    </div>
+                    <p
+                      className={`shrink-0 font-bold ${
+                        line.direction === "in" ? "text-success" : "text-danger"
+                      }`}
+                    >
+                      {line.direction === "in" ? "+" : "−"}
+                      {formatMkd(line.amountMkd)}
+                    </p>
+                    {line.entryId && (
+                      <Link href={`/history/${line.entryId}`} className="text-xs text-primary">
+                        →
+                      </Link>
+                    )}
+                    {line.expenseId && (
+                      <button
+                        type="button"
+                        onClick={() => deleteExpense(line.expenseId!)}
+                        className="text-xs text-danger"
+                      >
+                        ×
+                      </button>
+                    )}
+                    {line.incomeId && (
+                      <button
+                        type="button"
+                        onClick={() => deleteIncome(line.incomeId!)}
+                        className="text-xs text-danger"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </>
+      ) : (
+        <>
+          <Card className="mb-4 space-y-4">
+            <h3 className="font-semibold">{t("finances.chemicalPour")}</h3>
+            <p className="text-xs text-muted">{t("finances.chemicalPourHint")}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => pourChemical("c1")}
+                className="rounded-2xl bg-gradient-to-br from-primary to-blue-500 p-4 text-left text-white shadow-lg active:scale-[0.98]"
+              >
+                <span className="text-2xl">🧴</span>
+                <p className="mt-2 font-bold">{t("finances.chem1")}</p>
+                <p className="text-xs opacity-90">{formatMkd(data.chemical.c1.costMkd)}</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => pourChemical("c2")}
+                className="rounded-2xl bg-gradient-to-br from-violet-600 to-violet-400 p-4 text-left text-white shadow-lg active:scale-[0.98]"
+              >
+                <span className="text-2xl">🧪</span>
+                <p className="mt-2 font-bold">{t("finances.chem2")}</p>
+                <p className="text-xs opacity-90">{formatMkd(data.chemical.c2.costMkd)}</p>
+              </button>
+            </div>
+            <ProgressBar
+              label={t("dashboard.chemical1Remaining")}
+              current={data.chemical.c1.used}
+              max={data.chemical.c1.yield}
+              warning={data.chemical.c1.remaining / data.chemical.c1.yield < 0.15}
+            />
+            <ProgressBar
+              label={t("dashboard.chemical2Remaining")}
+              current={data.chemical.c2.used}
+              max={data.chemical.c2.yield}
+              warning={data.chemical.c2.remaining / data.chemical.c2.yield < 0.15}
+            />
+          </Card>
+
           <Card className="mb-4 space-y-3">
             <h3 className="font-semibold">{t("finances.addCost")}</h3>
             <Input label={t("finances.date")} type="date" value={expDate} onChange={(e) => setExpDate(e.target.value)} />
@@ -263,9 +350,9 @@ export default function FinancesPage() {
               value={expCategory}
               onChange={(e) => setExpCategory(e.target.value as typeof expCategory)}
             >
-              <option value="misc">{CATEGORY_LABELS.misc}</option>
-              <option value="equipment">{CATEGORY_LABELS.equipment}</option>
-              <option value="repairs">{CATEGORY_LABELS.repairs}</option>
+              <option value="misc">Разно</option>
+              <option value="equipment">Опрема</option>
+              <option value="repairs">Поправки</option>
             </select>
             <Input label={t("finances.amount")} type="number" value={expAmount} onChange={(e) => setExpAmount(e.target.value)} />
             <Input label={t("finances.note")} value={expNote} onChange={(e) => setExpNote(e.target.value)} />
@@ -274,21 +361,6 @@ export default function FinancesPage() {
             </Button>
           </Card>
 
-          <TransactionList
-            title={t("finances.allCosts")}
-            empty={t("finances.noCosts")}
-            items={data.expenses.map((e) => ({
-              id: e.id,
-              date: e.date,
-              label: CATEGORY_LABELS[e.category] ?? e.category,
-              sub: e.note ?? (e.chemicalType ? `Хем. ${e.chemicalType.toUpperCase()}` : undefined),
-              amount: -e.amountMkd,
-              onDelete: () => deleteExpense(e.id),
-            }))}
-          />
-        </>
-      ) : (
-        <>
           <Card className="mb-4 space-y-3">
             <h3 className="font-semibold">{t("finances.addTokens")}</h3>
             <p className="text-xs text-muted">
@@ -309,65 +381,29 @@ export default function FinancesPage() {
               {t("finances.saveIncome")}
             </Button>
           </Card>
-
-          <TransactionList
-            title={t("finances.tokenSalesList")}
-            empty={t("finances.noIncome")}
-            items={data.tokenSales.map((s) => ({
-              id: s.id,
-              date: s.date,
-              label: `${s.quantity} ${t("finances.tokens")}`,
-              sub: s.note ?? undefined,
-              amount: s.amountMkd,
-            }))}
-          />
-
-          <TransactionList
-            title={t("finances.otherIncomeList")}
-            empty={t("finances.noOtherIncome")}
-            items={data.otherIncome.map((i) => ({
-              id: i.id,
-              date: i.date,
-              label: t("finances.otherIncome"),
-              sub: i.note ?? undefined,
-              amount: i.amountMkd,
-              onDelete: () => deleteIncome(i.id),
-            }))}
-          />
-
-          <TransactionList
-            title={t("finances.washIncomeList")}
-            empty={t("finances.noWashIncome")}
-            items={data.washIncome.map((w) => ({
-              id: w.id,
-              date: w.date,
-              label: `${w.washes} ${t("finances.washes")}`,
-              sub: `${t("finances.profit")}: ${formatMkd(w.profitMkd)}`,
-              amount: w.amountMkd,
-              href: `/history/${w.id}`,
-            }))}
-          />
         </>
       )}
     </AppShell>
   );
 }
 
-function SummaryTile({
+function BreakdownRow({
   label,
-  value,
+  amount,
   positive,
-  className,
 }: {
   label: string;
-  value: string;
+  amount: number;
   positive?: boolean;
-  className?: string;
 }) {
+  if (amount <= 0) return null;
   return (
-    <div className={`rounded-2xl border border-border bg-white p-3 shadow-sm ${className ?? ""}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <p className={`mt-1 text-lg font-bold ${positive ? "text-success" : "text-foreground"}`}>{value}</p>
+    <div className="flex justify-between border-b border-border py-2 text-sm last:border-0">
+      <span className="text-muted">{label}</span>
+      <span className={`font-semibold ${positive ? "text-success" : "text-danger"}`}>
+        {positive ? "+" : "−"}
+        {formatMkd(amount)}
+      </span>
     </div>
   );
 }
@@ -383,60 +419,5 @@ function TabBtn({ active, onClick, label }: { active: boolean; onClick: () => vo
     >
       {label}
     </button>
-  );
-}
-
-function TransactionList({
-  title,
-  empty,
-  items,
-}: {
-  title: string;
-  empty: string;
-  items: {
-    id: string;
-    date: string;
-    label: string;
-    sub?: string;
-    amount: number;
-    onDelete?: () => void;
-    href?: string;
-  }[];
-}) {
-  return (
-    <Card className="mb-4">
-      <h3 className="mb-3 font-semibold">{title}</h3>
-      {items.length === 0 ? (
-        <p className="text-sm text-muted">{empty}</p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {items.map((item) => (
-            <li key={item.id} className="flex items-center gap-2 py-3 first:pt-0 last:pb-0">
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{item.label}</p>
-                <p className="text-xs text-muted">
-                  {new Date(item.date + "T12:00:00").toLocaleDateString("mk-MK")}
-                  {item.sub ? ` · ${item.sub}` : ""}
-                </p>
-              </div>
-              <p className={`shrink-0 font-bold ${item.amount >= 0 ? "text-success" : "text-danger"}`}>
-                {item.amount >= 0 ? "+" : ""}
-                {formatMkd(Math.abs(item.amount))}
-              </p>
-              {item.href && (
-                <Link href={item.href} className="text-xs font-semibold text-primary">
-                  →
-                </Link>
-              )}
-              {item.onDelete && (
-                <button type="button" onClick={item.onDelete} className="text-xs text-danger">
-                  ×
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
   );
 }
