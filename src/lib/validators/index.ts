@@ -68,3 +68,24 @@ export const entryAmendSchema = z.object({
   fieldName: z.string(),
   newValue: z.union([z.string(), z.number(), z.boolean()]),
 });
+
+export const personalWithdrawalSchema = z.object({
+  withdrawalDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  amountMkd: z.coerce.number().positive(),
+  note: z.string().optional(),
+});
+
+export const personalExpenseSchema = z.object({
+  expenseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  category: z.enum([
+    "food",
+    "housing",
+    "transport",
+    "health",
+    "family",
+    "entertainment",
+    "other",
+  ]),
+  amountMkd: z.coerce.number().positive(),
+  note: z.string().optional(),
+});

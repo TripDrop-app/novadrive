@@ -22,6 +22,7 @@ import {
   aggregateProgramProfit,
   costBreakdownSeries,
 } from "@/lib/analytics/series";
+import { enrichEntriesForAnalytics } from "@/lib/analytics/enrich";
 import { differenceInDays, format } from "date-fns";
 import { db } from "@/lib/db";
 import { freeWashes } from "@/lib/db/schema";
@@ -36,8 +37,9 @@ export async function GET(request: Request) {
     const bounds = getPeriodBounds(period, anchor);
     const prevBounds = previousPeriodBounds(period, bounds.start, bounds.end);
 
-    const allEntries = await listDailyEntries();
+    const allEntriesRaw = await listDailyEntries();
     const settings = await getSettings();
+    const allEntries = enrichEntriesForAnalytics(allEntriesRaw, settings);
 
     const currentEntries = filterEntriesByRange(allEntries, bounds.start, bounds.end);
     const previousEntries = filterEntriesByRange(

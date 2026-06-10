@@ -26,6 +26,16 @@ export const expenseCategoryEnum = pgEnum("expense_category", [
 
 export const chemicalTypeEnum = pgEnum("chemical_type", ["c1", "c2"]);
 
+export const personalExpenseCategoryEnum = pgEnum("personal_expense_category", [
+  "food",
+  "housing",
+  "transport",
+  "health",
+  "family",
+  "entertainment",
+  "other",
+]);
+
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   username: text("username").notNull().unique(),
@@ -148,6 +158,44 @@ export const chemicalCanisterEvents = pgTable("chemical_canister_events", {
   amountMkd: numeric("amount_mkd", { precision: 12, scale: 2 }),
   purchasedAt: timestamp("purchased_at", { withTimezone: true }).notNull().defaultNow(),
   note: text("note"),
+});
+
+export const personalWithdrawals = pgTable("personal_withdrawals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  withdrawalDate: date("withdrawal_date").notNull(),
+  amountMkd: numeric("amount_mkd", { precision: 12, scale: 2 }).notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const personalExpenses = pgTable("personal_expenses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  expenseDate: date("expense_date").notNull(),
+  category: personalExpenseCategoryEnum("category").notNull(),
+  amountMkd: numeric("amount_mkd", { precision: 12, scale: 2 }).notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const chemicalBatches = pgTable("chemical_batches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  chemicalType: chemicalTypeEnum("chemical_type").notNull(),
+  startedDate: date("started_date").notNull(),
+  endedDate: date("ended_date"),
+  canisterCostMkd: numeric("canister_cost_mkd", { precision: 12, scale: 2 }).notNull(),
+  yieldWashes: integer("yield_washes").notNull(),
+  washCount: integer("wash_count").notNull().default(0),
+  p1Count: integer("p1_count").notNull().default(0),
+  p2Count: integer("p2_count").notNull().default(0),
+  p3Count: integer("p3_count").notNull().default(0),
+  revenueMkd: numeric("revenue_mkd", { precision: 12, scale: 2 }).notNull().default("0"),
+  waterCostMkd: numeric("water_cost_mkd", { precision: 12, scale: 2 }).notNull().default("0"),
+  electricityCostMkd: numeric("electricity_cost_mkd", { precision: 12, scale: 2 }).notNull().default("0"),
+  profitMkd: numeric("profit_mkd", { precision: 12, scale: 2 }).notNull().default("0"),
+  expenseId: uuid("expense_id"),
+  isActive: boolean("is_active").notNull().default(true),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export type Settings = typeof settings.$inferSelect;

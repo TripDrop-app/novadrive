@@ -39,6 +39,33 @@ interface FinancesData {
   };
 }
 
+interface ActiveBatch {
+  chemicalType: string;
+  startedDate: string;
+  yieldWashes: number;
+  remainingWashes: number;
+  washCount: number;
+  revenueMkd: number;
+  waterCostMkd: number;
+  electricityCostMkd: number;
+  profitMkd: number;
+  canisterCostMkd: number;
+}
+
+interface ClosedBatch {
+  id: string;
+  startedDate: string;
+  endedDate: string | null;
+  chemicalType?: string;
+  washCount: number;
+  revenueMkd: number;
+  waterCostMkd: number;
+  electricityCostMkd: number;
+  profitMkd: number;
+  canisterCostMkd: number;
+  yieldWashes: number;
+}
+
 export default function FinancesPage() {
   const [data, setData] = useState<FinancesData | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
@@ -53,14 +80,21 @@ export default function FinancesPage() {
   const [otherAmount, setOtherAmount] = useState("");
   const [otherNote, setOtherNote] = useState("");
   const [otherDate, setOtherDate] = useState(todayDateStr());
+  const [batches, setBatches] = useState<{
+    active: { c1: ActiveBatch | null; c2: ActiveBatch | null };
+    history: { c1: ClosedBatch[]; c2: ClosedBatch[] };
+  } | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch("/api/finances")
-      .then(async (r) => {
-        const json = await r.json();
-        if (!r.ok) throw new Error(json.hint ?? "Грешка");
+    Promise.all([fetch("/api/finances"), fetch("/api/chemical-batches")])
+      .then(async ([finRes, batchRes]) => {
+        const json = await finRes.json();
+        if (!finRes.ok) throw new Error(json.hint ?? "Грешка");
         setData(json);
+        if (batchRes.ok) {
+          setBatches(await batchRes.json());
+        }
         setError(null);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Грешка"))
@@ -79,8 +113,22 @@ export default function FinancesPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chemicalType: type }),
     });
-    if (res.ok) load();
-    else alert(t("common.error"));
+    const json = await res.json();
+    if (res.ok) {
+      let msg = json.message ?? t("finances.pourDone");
+      if (json.closedBatch?.stats) {
+        const s = json.closedBatch.stats;
+        msg += `\n\n${t("finances.batchClosed")}:\n`;
+        msg += `${s.washCount} ${t("finances.batchWashes")}\n`;
+        msg += `${t("dashboard.grossRevenue")}: ${formatMkd(s.revenueMkd)}\n`;
+        msg += `${t("dashboard.netProfit")}: ${formatMkd(s.profitMkd)}`;
+      }
+      if (json.yieldWashes) {
+        msg += `\n\n${t("finances.batchNew")}: ~${json.yieldWashes} ${t("finances.batchWashes")}`;
+      }
+      alert(msg);
+      load();
+    } else alert(t("common.error"));
   }
 
   async function addExpense() {
@@ -340,7 +388,20 @@ export default function FinancesPage() {
               max={data.chemical.c2.yield}
               warning={data.chemical.c2.remaining / data.chemical.c2.yield < 0.15}
             />
+            {batches?.active.c1 && (
+              <BatchLiveCard batch={batches.active.c1} label={t("finances.chem1")} />
+            )}
+            {batches?.active.c2 && (
+              <BatchLiveCard batch={batches.active.c2} label={t("finances.chem2")} />
+            )}
           </Card>
+
+          {batches && (batches.history.c1.length > 0 || batches.history.c2.length > 0) && (
+            <Card className="mb-4">
+              <h3 className="mb-3 font-semibold">{t("finances.batchHistory")}</h3>
+              <BatchHistoryList batches={[...batches.history.c1, ...batches.history.c2]} />
+            </Card>
+          )}
 
           <Card className="mb-4 space-y-3">
             <h3 className="font-semibold">{t("finances.addCost")}</h3>
@@ -405,6 +466,42 @@ function BreakdownRow({
         {formatMkd(amount)}
       </span>
     </div>
+  );
+}
+
+function BatchLiveCard({ batch, label }: { batch: ActiveBatch; label: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-slate-50 p-3 text-sm">
+      <p className="font-semibold">{label} — {t("finances.batchActive")}</p>
+      <p className="text-xs text-muted">
+        {t("finances.batchRemaining")}: {batch.remainingWashes} / {batch.yieldWashes} {t("finances.batchWashes")}
+      </p>
+      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+        <span>{t("finances.batchWashes")}: <b>{batch.washCount}</b></span>
+        <span>{t("dashboard.grossRevenue")}: <b>{formatMkd(batch.revenueMkd)}</b></span>
+        <span>{t("dashboard.costWater")}: <b>{formatMkd(batch.waterCostMkd)}</b></span>
+        <span>{t("dashboard.costElectricity")}: <b>{formatMkd(batch.electricityCostMkd)}</b></span>
+        <span className="col-span-2">{t("dashboard.netProfit")}: <b className="text-success">{formatMkd(batch.profitMkd)}</b></span>
+      </div>
+    </div>
+  );
+}
+
+function BatchHistoryList({ batches }: { batches: ClosedBatch[] }) {
+  const sorted = [...batches].sort((a, b) => (b.endedDate ?? "").localeCompare(a.endedDate ?? ""));
+  return (
+    <ul className="divide-y divide-border text-sm">
+      {sorted.slice(0, 10).map((b) => (
+        <li key={b.id} className="py-3">
+          <p className="font-medium">
+            {b.chemicalType === "c2" ? "Хем.2" : "Хем.1"} · {b.startedDate} → {b.endedDate ?? "—"}
+          </p>
+          <p className="text-xs text-muted">
+            {b.washCount} {t("finances.batchWashes")} · {formatMkd(b.revenueMkd)} · {t("dashboard.netProfit")}: {formatMkd(b.profitMkd)}
+          </p>
+        </li>
+      ))}
+    </ul>
   );
 }
 

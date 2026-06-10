@@ -3,11 +3,12 @@
     "name": "Перална",
     "subtitle": "Управување со перална"
   },
-    "nav": {
+  "nav": {
     "dashboard": "Почетна",
     "daily": "Внес",
     "history": "Историја",
     "finances": "Сметка",
+    "personal": "Лично",
     "analytics": "Аналитика",
     "settings": "Поставки"
   },
@@ -141,7 +142,47 @@
     "saveIncome": "Зачувај приход",
     "outstanding": "Нереализирани жетони",
     "tokenQty": "Број жетони",
-    "deleteConfirm": "Избриши запис?"
+    "deleteConfirm": "Избриши запис?",
+    "pourDone": "Канистерот е зачуван.",
+    "batchActive": "тековен канистер",
+    "batchRemaining": "Преостанати миења",
+    "batchWashes": "миења",
+    "batchClosed": "Затворен канистер",
+    "batchNew": "Нов канистер — капацитет",
+    "batchHistory": "Историја на канистери"
+  },
+  "personal": {
+    "title": "Лични финансии",
+    "subtitle": "Живеете од парите на пералната",
+    "tabOverview": "Преглед",
+    "tabAdd": "Додај",
+    "availableInBusiness": "Во пералната",
+    "availableHint": "Профит што уште не сте го подигнале",
+    "businessMonth": "Профит перална",
+    "inPocket": "Во џеб",
+    "livingOk": "Личните трошоци се покриени од подигнувањата",
+    "livingOver": "Потрошивте повеќе отколку што подигнавте",
+    "withdrawn": "Подигнато",
+    "spent": "Потрошено",
+    "byCategory": "Трошоци по категорија",
+    "ledger": "Личен дневник",
+    "ledgerEmpty": "Нема записи за овој месец",
+    "addWithdrawal": "Подигни од перална",
+    "withdrawalHint": "Кога земате пари од касата за лични потреби",
+    "saveWithdrawal": "Зачувај подигнување",
+    "addExpense": "Личен трошок",
+    "expenseHint": "Храна, сметки, бензин — не е трошок на пералната",
+    "saveExpense": "Зачувај трошок",
+    "deleteConfirm": "Избриши запис?",
+    "categories": {
+      "food": "Храна",
+      "housing": "Дом / сметки",
+      "transport": "Транспорт",
+      "health": "Здравје",
+      "family": "Семејство",
+      "entertainment": "Забава",
+      "other": "Друго"
+    }
   },
   "analytics": {
     "title": "Аналитика",

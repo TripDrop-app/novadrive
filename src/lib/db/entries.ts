@@ -272,28 +272,8 @@ export async function getTokenStats() {
 }
 
 export async function getChemicalUsageSinceLastCanister(type: "c1" | "c2") {
-  const lastEvent = await db
-    .select()
-    .from(expenses)
-    .where(
-      and(
-        eq(expenses.category, "chemicals"),
-        eq(expenses.chemicalType, type)
-      )
-    )
-    .orderBy(desc(expenses.createdAt))
-    .limit(1);
-
-  const sinceDate = lastEvent[0]?.expenseDate ?? "1970-01-01";
-  const entries = await db
-    .select()
-    .from(dailyEntries)
-    .where(gte(dailyEntries.sessionDate, sinceDate));
-
-  if (type === "c1") {
-    return entries.reduce((s, e) => s + e.p1Count + e.p2Count + e.p3Count, 0);
-  }
-  return entries.reduce((s, e) => s + e.p2Count + e.p3Count, 0);
+  const { getChemicalUsageFromBatch } = await import("./chemical-batches");
+  return getChemicalUsageFromBatch(type);
 }
 
 export async function deleteDailyEntry(id: string) {
