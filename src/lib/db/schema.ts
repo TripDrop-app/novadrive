@@ -36,6 +36,17 @@ export const personalExpenseCategoryEnum = pgEnum("personal_expense_category", [
   "other",
 ]);
 
+export const groceryItemDecisionEnum = pgEnum("grocery_item_decision", [
+  "pending",
+  "need",
+  "skip",
+]);
+
+export const grocerySessionPhaseEnum = pgEnum("grocery_session_phase", [
+  "swiping",
+  "shopping",
+]);
+
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   username: text("username").notNull().unique(),
@@ -196,6 +207,33 @@ export const chemicalBatches = pgTable("chemical_batches", {
   isActive: boolean("is_active").notNull().default(true),
   closedAt: timestamp("closed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const groceryItems = pgTable("grocery_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  emoji: text("emoji"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const grocerySessions = pgTable("grocery_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  phase: grocerySessionPhaseEnum("phase").notNull().default("swiping"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const grocerySessionItems = pgTable("grocery_session_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: uuid("session_id")
+    .notNull()
+    .references(() => grocerySessions.id, { onDelete: "cascade" }),
+  itemId: uuid("item_id")
+    .notNull()
+    .references(() => groceryItems.id, { onDelete: "cascade" }),
+  decision: groceryItemDecisionEnum("decision").notNull().default("pending"),
+  inCart: boolean("in_cart").notNull().default(false),
+  removed: boolean("removed").notNull().default(false),
 });
 
 export type Settings = typeof settings.$inferSelect;
