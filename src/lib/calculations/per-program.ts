@@ -135,14 +135,8 @@ export function computeUnitEconomics(settings: CalcSettings): ProgramBreakdown[]
   const extra = settings.electricityExtraP3Kwh;
   const sessionKwh = base + base + (base + extra);
   const electricityCostMkd = sessionKwh * settings.electricityRateMkd;
-  const chem1 =
-    settings.chemical1YieldWashes && settings.chemical1YieldWashes > 0
-      ? (3 * settings.chemical1CostMkd) / settings.chemical1YieldWashes
-      : 0;
-  const chem2 =
-    settings.chemical2YieldWashes && settings.chemical2YieldWashes > 0
-      ? (2 * settings.chemical2CostMkd) / settings.chemical2YieldWashes
-      : 0;
+  const chem1 = 0;
+  const chem2 = 0;
 
   return computeProgramBreakdowns({
     counts,

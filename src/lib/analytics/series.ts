@@ -171,7 +171,7 @@ export function costBreakdownSeries(costs: {
   return [
     { name: "Вода", key: "water", value: costs.water, fill: "#38BDF8" },
     { name: "Струја", key: "electricity", value: costs.electricity, fill: "#1A6EFF" },
-    { name: "Хем. 1", key: "chemical1", value: costs.chemical1, fill: "#6366F1" },
+    { name: "Хемикалија", key: "chemical1", value: costs.chemical1, fill: "#6366F1" },
     { name: "Хем. 2", key: "chemical2", value: costs.chemical2, fill: "#A78BFA" },
     { name: "Друго", key: "misc", value: costs.misc, fill: "#CBD5E1" },
   ].filter((c) => c.value > 0);

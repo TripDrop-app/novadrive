@@ -61,8 +61,6 @@ function buildMonthLedger(
     const revenue = Number(e.grossRevenueMkd);
     const water = Number(e.waterCostMkd);
     const elec = Number(e.electricityCostMkd);
-    const c1 = Number(e.chemical1CostMkd);
-    const c2 = Number(e.chemical2CostMkd);
 
     if (revenue > 0) {
       lines.push({
@@ -100,32 +98,6 @@ function buildMonthLedger(
         label: "Струја",
         sub: e.deltaKwh != null ? `${Number(e.deltaKwh).toFixed(1)} kWh` : undefined,
         kind: "electricity_out",
-        entryId: e.id,
-      });
-    }
-    if (c1 > 0) {
-      lines.push({
-        id: `chem1-${e.id}`,
-        date: e.sessionDate,
-        sortAt: `${e.sessionDate}T12:03:00`,
-        direction: "out",
-        amountMkd: c1,
-        label: "Хемикалија 1",
-        sub: "употреба од миења",
-        kind: "chem1_out",
-        entryId: e.id,
-      });
-    }
-    if (c2 > 0) {
-      lines.push({
-        id: `chem2-${e.id}`,
-        date: e.sessionDate,
-        sortAt: `${e.sessionDate}T12:04:00`,
-        direction: "out",
-        amountMkd: c2,
-        label: "Хемикалија 2",
-        sub: "употреба од миења",
-        kind: "chem2_out",
         entryId: e.id,
       });
     }
@@ -217,10 +189,12 @@ export async function getFinancesSummary() {
 
   const waterOut = sum(monthEntries.map((e) => Number(e.waterCostMkd)));
   const electricityOut = sum(monthEntries.map((e) => Number(e.electricityCostMkd)));
-  const chem1Out = sum(monthEntries.map((e) => Number(e.chemical1CostMkd)));
-  const chem2Out = sum(monthEntries.map((e) => Number(e.chemical2CostMkd)));
   const expensesOut = sum(monthExpenses.map((e) => Number(e.amountMkd)));
-  const moneyOut = waterOut + electricityOut + chem1Out + chem2Out + expensesOut;
+  const chemicalOut = sum(
+    monthExpenses.filter((e) => e.category === "chemicals").map((e) => Number(e.amountMkd))
+  );
+  const otherExpensesOut = expensesOut - chemicalOut;
+  const moneyOut = waterOut + electricityOut + expensesOut;
   const balance = moneyIn - moneyOut;
 
   const ledger = buildMonthLedger(monthEntries, monthExpenses, monthTokens, monthOther);
@@ -237,9 +211,8 @@ export async function getFinancesSummary() {
         out: {
           water: waterOut,
           electricity: electricityOut,
-          chemical1: chem1Out,
-          chemical2: chem2Out,
-          expenses: expensesOut,
+          chemicals: chemicalOut,
+          expenses: otherExpensesOut,
         },
       },
     },

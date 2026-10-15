@@ -25,7 +25,7 @@ import {
 import { enrichEntriesForAnalytics } from "@/lib/analytics/enrich";
 import { differenceInDays, format } from "date-fns";
 import { db } from "@/lib/db";
-import { freeWashes } from "@/lib/db/schema";
+import { expenses } from "@/lib/db/schema";
 
 export async function GET(request: Request) {
   try {
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
     const allEntriesRaw = await listDailyEntries();
     const settings = await getSettings();
-    const allEntries = enrichEntriesForAnalytics(allEntriesRaw, settings);
+    const allEntries = enrichEntriesForAnalytics(allEntriesRaw);
 
     const currentEntries = filterEntriesByRange(allEntries, bounds.start, bounds.end);
     const previousEntries = filterEntriesByRange(
@@ -51,14 +51,15 @@ export async function GET(request: Request) {
     const current = aggregateEntries(currentEntries);
     const previous = aggregateEntries(previousEntries);
 
-    const freeWashRows = await db.select().from(freeWashes);
-    const freeInPeriod = freeWashRows.filter((fw) => {
-      const entry = allEntries.find((e) => e.id === fw.dailyEntryId);
-      if (!entry) return false;
-      const d = new Date(entry.sessionDate + "T12:00:00");
-      return d >= bounds.start && d <= bounds.end;
-    });
-    const freeWashCount = freeInPeriod.reduce((s, fw) => s + fw.quantity, 0);
+    const startStr = format(bounds.start, "yyyy-MM-dd");
+    const endStr = format(bounds.end, "yyyy-MM-dd");
+    const expenseRows = await db.select().from(expenses);
+    const periodExpenses = expenseRows.filter(
+      (e) => e.expenseDate >= startStr && e.expenseDate <= endStr
+    );
+    const chemicalExpenseCost = periodExpenses
+      .filter((e) => e.category === "chemicals")
+      .reduce((s, e) => s + Number(e.amountMkd), 0);
 
     const prices = {
       p1: settings.priceP1Mkd,
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
       revenue: pctChange(current.grossRevenue, previous.grossRevenue),
       profit: pctChange(current.netProfit, previous.netProfit),
       washes: pctChange(current.paid, previous.paid),
-      costs: pctChange(current.totalCost, previous.totalCost),
+      costs: pctChange(current.totalCost + chemicalExpenseCost, previous.totalCost),
     };
 
     const prevWeekAnchor = shiftPeriod(period, anchor, -1);
@@ -83,13 +84,17 @@ export async function GET(request: Request) {
 
     const rev = revenueByProgram(currentEntries, prices);
     const trendRaw = dailyTrend(currentEntries);
-    const endStr = format(bounds.end, "yyyy-MM-dd");
 
     return NextResponse.json({
       period,
       label: bounds.label,
       anchor: anchor.toISOString(),
-      current,
+      current: {
+        ...current,
+        chemical1Cost: 0,
+        chemical2Cost: 0,
+        totalCost: current.waterCost + current.electricityCost + current.miscCost,
+      },
       previous,
       comparison,
       revenueByProgram: rev,
@@ -99,8 +104,8 @@ export async function GET(request: Request) {
       costChart: costBreakdownSeries({
         water: current.waterCost,
         electricity: current.electricityCost,
-        chemical1: current.chemical1Cost,
-        chemical2: current.chemical2Cost,
+        chemical1: chemicalExpenseCost,
+        chemical2: 0,
         misc: current.miscCost,
       }),
       weekdayChart: weekdaySeries(currentEntries),
@@ -117,7 +122,6 @@ export async function GET(request: Request) {
       ),
       records: findRecords(allEntries),
       bestDayOfWeek: bestDayOfWeek(currentEntries),
-      freeWashCount,
       sideBySide: {
         current: aggregateEntries(currentEntries),
         previousPeriod: aggregateEntries(previousEntries),

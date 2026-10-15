@@ -25,8 +25,7 @@ interface FinancesData {
       out: {
         water: number;
         electricity: number;
-        chemical1: number;
-        chemical2: number;
+        chemicals: number;
         expenses: number;
       };
     };
@@ -284,8 +283,7 @@ export default function FinancesPage() {
             <h3 className="mb-3 text-sm font-semibold text-danger">{t("finances.whereOut")}</h3>
             <BreakdownRow label={t("finances.outWater")} amount={totals.breakdown.out.water} />
             <BreakdownRow label={t("finances.outElectricity")} amount={totals.breakdown.out.electricity} />
-            <BreakdownRow label={t("finances.outChem1")} amount={totals.breakdown.out.chemical1} />
-            <BreakdownRow label={t("finances.outChem2")} amount={totals.breakdown.out.chemical2} />
+            <BreakdownRow label={t("finances.outChemicals")} amount={totals.breakdown.out.chemicals} />
             <BreakdownRow label={t("finances.outManual")} amount={totals.breakdown.out.expenses} />
             <p className="mt-2 text-xs text-muted">{t("finances.outHint")}</p>
           </Card>

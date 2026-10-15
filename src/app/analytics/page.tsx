@@ -258,9 +258,7 @@ export default function AnalyticsPage() {
                 {t("analytics.bestDow")}: {data.bestDayOfWeek.dayName} (
                 {formatMkd(data.bestDayOfWeek.avgRevenue)} просек)
               </p>
-              <p className="text-xs text-muted">
-                {t("analytics.freeWashes")}: {data.freeWashCount}
-              </p>
+
             </Card>
           )}
 

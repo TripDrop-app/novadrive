@@ -9,7 +9,7 @@ import { Metric, ProgressBar } from "@/components/ui/metric";
 import { ProgramEconomics } from "@/components/dashboard/program-economics";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import type { DashboardChartsProps } from "@/components/dashboard/dashboard-charts";
-import { formatMkd, formatNumber } from "@/lib/format";
+import { formatMkd } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import type { ProgramBreakdown } from "@/lib/calculations";
 
@@ -28,7 +28,6 @@ interface DashboardData {
     chemical2CostMkd: string;
     createdAt: string;
   } | null;
-  tokenStats: { outstanding: number };
   chemical: {
     c1Remaining: number | null;
     c2Remaining: number | null;
@@ -101,10 +100,7 @@ export default function DashboardPage() {
   const entry = data.todayEntry;
   const paid = entry ? entry.p1Count + entry.p2Count + entry.p3Count : 0;
   const totalCosts = entry
-    ? Number(entry.waterCostMkd) +
-      Number(entry.electricityCostMkd) +
-      Number(entry.chemical1CostMkd) +
-      Number(entry.chemical2CostMkd)
+    ? Number(entry.waterCostMkd) + Number(entry.electricityCostMkd)
     : 0;
 
   return (
@@ -188,15 +184,6 @@ export default function DashboardPage() {
         {(data.chemical.c1Low || data.chemical.c2Low) && (
           <p className="text-sm font-semibold text-warning">{t("dashboard.lowChemicalWarning")}</p>
         )}
-      </Card>
-
-      <Card className="mb-4">
-        <div className="flex justify-between">
-          <span className="text-muted">{t("dashboard.outstandingTokens")}</span>
-          <span className="text-lg font-bold text-primary">
-            {formatNumber(data.tokenStats.outstanding)}
-          </span>
-        </div>
       </Card>
 
       {data.lastEntry && (

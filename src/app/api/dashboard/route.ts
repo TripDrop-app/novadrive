@@ -5,7 +5,7 @@ import {
   computeUnitEconomics,
   parseSettings,
 } from "@/lib/calculations";
-import { getEntryForDate, getTokenStats, getChemicalUsageSinceLastCanister } from "@/lib/db/entries";
+import { getEntryForDate, getChemicalUsageSinceLastCanister } from "@/lib/db/entries";
 import { getSettings } from "@/lib/db/settings";
 import { listDailyEntries } from "@/lib/db/entries";
 import { todayDateStr } from "@/lib/format";
@@ -27,7 +27,6 @@ export async function GET() {
     const today = todayDateStr();
     const settings = await getSettings();
     const todayEntry = await getEntryForDate(today);
-    const tokenStats = await getTokenStats();
     const c1Used = await getChemicalUsageSinceLastCanister("c1");
     const c2Used = await getChemicalUsageSinceLastCanister("c2");
 
@@ -52,8 +51,8 @@ export async function GET() {
         },
         settings: calcSettings,
         electricityCostMkd: Number(todayEntry.electricityCostMkd),
-        chemical1CostMkd: Number(todayEntry.chemical1CostMkd),
-        chemical2CostMkd: Number(todayEntry.chemical2CostMkd),
+        chemical1CostMkd: 0,
+        chemical2CostMkd: 0,
         miscExpensesMkd: Number(todayEntry.miscExpensesMkd),
       });
     } else {
@@ -94,7 +93,6 @@ export async function GET() {
         ),
         weekTotals: weekAgg,
       },
-      tokenStats,
       chemical: {
         c1Used,
         c2Used,

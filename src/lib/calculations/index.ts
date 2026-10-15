@@ -126,8 +126,8 @@ export function computeEntrySnapshot(params: {
   }
 
   const elec = electricityCost(delta, expected, settings);
-  const chem1 = chemical1CostPerSession(counts, settings);
-  const chem2 = chemical2CostPerSession(counts, settings);
+  const chem1 = 0;
+  const chem2 = 0;
   const profit = netProfit(revenue, water, elec, chem1, chem2, miscExpensesMkd);
   const paid = totalPaidWashes(counts);
   const totalCost = water + elec + chem1 + chem2 + miscExpensesMkd;
