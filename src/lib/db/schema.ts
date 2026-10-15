@@ -236,6 +236,27 @@ export const grocerySessionItems = pgTable("grocery_session_items", {
   removed: boolean("removed").notNull().default(false),
 });
 
+export const truckCustomers = pgTable("truck_customers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyName: text("company_name").notNull(),
+  phone: text("phone"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const truckWashes = pgTable("truck_washes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  customerId: uuid("customer_id")
+    .notNull()
+    .references(() => truckCustomers.id, { onDelete: "cascade" }),
+  plate: text("plate").notNull(),
+  washDate: date("wash_date").notNull(),
+  amountMkd: numeric("amount_mkd", { precision: 12, scale: 2 }).notNull(),
+  note: text("note"),
+  paid: boolean("paid").notNull().default(false),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Settings = typeof settings.$inferSelect;
 export type DailyEntry = typeof dailyEntries.$inferSelect;
 export type FreeWash = typeof freeWashes.$inferSelect;

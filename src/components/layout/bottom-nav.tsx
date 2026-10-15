@@ -9,6 +9,7 @@ const tabs = [
   { href: "/", labelKey: "nav.dashboard", icon: HomeIcon },
   { href: "/daily", labelKey: "nav.daily", icon: PlusIcon },
   { href: "/finances", labelKey: "nav.finances", icon: WalletIcon },
+  { href: "/trucks", labelKey: "nav.trucks", icon: TruckIcon },
   { href: "/history", labelKey: "nav.history", icon: CalendarIcon },
   { href: "/analytics", labelKey: "nav.analytics", icon: ChartIcon },
   { href: "/settings", labelKey: "nav.settings", icon: GearIcon },
@@ -59,7 +60,7 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                "flex min-h-[56px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-[10px] font-medium transition",
+                "flex min-h-[56px] min-w-[40px] flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-[9px] font-medium transition",
                 active ? "text-primary" : "text-muted"
               )}
             >
@@ -119,6 +120,17 @@ function WalletIcon({ active }: { active: boolean }) {
       <rect x="2" y="6" width="20" height="14" rx="2" />
       <path d="M2 10h20" />
       <circle cx="17" cy="14" r="1.5" fill={active ? "#1A6EFF" : "#64748b"} />
+    </svg>
+  );
+}
+
+function TruckIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? "#1A6EFF" : "#64748b"} strokeWidth="2">
+      <path d="M1 16V6h11v10" />
+      <path d="M12 9h4l3 3v4h-7" />
+      <circle cx="6" cy="17" r="2" />
+      <circle cx="17" cy="17" r="2" />
     </svg>
   );
 }
