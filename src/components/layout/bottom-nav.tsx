@@ -14,11 +14,42 @@ const tabs = [
   { href: "/settings", labelKey: "nav.settings", icon: GearIcon },
 ];
 
+export function DesktopNav() {
+  const pathname = usePathname();
+
+  return (
+    <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-white px-3 py-6 md:flex">
+      <div className="mb-8 px-3">
+        <p className="text-lg font-bold text-primary">{t("app.name")}</p>
+        <p className="text-xs text-muted">tripdrop.app</p>
+      </div>
+      <div className="flex flex-col gap-1">
+        {tabs.map(({ href, labelKey, icon: Icon }) => {
+          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium",
+                active ? "bg-blue-50 text-primary" : "text-muted hover:bg-slate-50"
+              )}
+            >
+              <Icon active={active} />
+              <span>{t(labelKey)}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
 export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="mx-auto flex max-w-lg items-stretch justify-around">
         {tabs.map(({ href, labelKey, icon: Icon }) => {
           const active =

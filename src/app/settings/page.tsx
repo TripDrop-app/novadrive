@@ -183,6 +183,9 @@ export default function SettingsPage() {
 
       <Card className="mb-4 space-y-3">
         <h3 className="font-semibold">{t("settings.chemicals")}</h3>
+        <p className="text-xs text-muted">
+          Два канистри со транспорт = 5760 ден. Еден канистер = 2880 ден. Се одзема само кога ќе сипнете.
+        </p>
         <NumField label="Хемикалија 1 (MKD/канистер)" value={form.chemical1CostMkd} onChange={(v) => set("chemical1CostMkd", v)} />
         <NumField label="Хемикалија 2 (MKD/канистер)" value={form.chemical2CostMkd} onChange={(v) => set("chemical2CostMkd", v)} />
         <p className="text-xs text-muted">{t("settings.chemicalYieldHint")}</p>

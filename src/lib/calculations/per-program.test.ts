@@ -60,7 +60,8 @@ describe("computeProgramBreakdowns", () => {
 
     const p3 = rows.find((r) => r.program === 3)!;
     expect(p3.profitPerWashMkd).not.toBeNull();
-    expect(p3.chemical2Mkd).toBeGreaterThan(0);
+    expect(p3.chemical1Mkd).toBe(0);
+    expect(p3.chemical2Mkd).toBe(0);
     expect(rows.find((r) => r.program === 1)!.chemical2Mkd).toBe(0);
   });
 });

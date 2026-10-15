@@ -67,8 +67,6 @@ export default function HistoryDetailPage() {
         <Row label={t("dashboard.grossRevenue")} value={formatMkd(Number(e.grossRevenueMkd))} />
         <Row label="Вода" value={formatMkd(Number(e.waterCostMkd))} />
         <Row label="Струја" value={formatMkd(Number(e.electricityCostMkd))} />
-        <Row label="Хем. 1" value={formatMkd(Number(e.chemical1CostMkd))} />
-        <Row label="Хем. 2" value={formatMkd(Number(e.chemical2CostMkd))} />
         <Row label={t("dashboard.netProfit")} value={formatMkd(Number(e.netProfitMkd))} large />
         {e.meterReadingKwh != null && (
           <Row label="Струјомер" value={`${e.meterReadingKwh} kWh`} />

@@ -66,10 +66,10 @@ export const settings = pgTable("settings", {
     .default("35.34"),
   chemical1CostMkd: numeric("chemical_1_cost_mkd", { precision: 10, scale: 2 })
     .notNull()
-    .default("2850"),
+    .default("2880"),
   chemical2CostMkd: numeric("chemical_2_cost_mkd", { precision: 10, scale: 2 })
     .notNull()
-    .default("2850"),
+    .default("2880"),
   chemical1YieldWashes: integer("chemical_1_yield_washes"),
   chemical2YieldWashes: integer("chemical_2_yield_washes"),
   meterBaselineKwh: numeric("meter_baseline_kwh", { precision: 12, scale: 3 }),

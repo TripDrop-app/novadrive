@@ -36,16 +36,17 @@ export function ProgramEconomics({
   }
 
   return (
-    <div className="mb-4 space-y-3">
-      <h3 className="text-sm font-semibold text-foreground">
+    <div className="mb-4">
+      <h3 className="mb-1 text-sm font-semibold text-foreground">
         {reference ? t("dashboard.unitEconomicsTitle") : t("dashboard.programEconomicsTitle")}
       </h3>
       {reference && (
-        <p className="text-xs text-muted">{t("dashboard.unitEconomicsHint")}</p>
+        <p className="mb-3 text-xs text-muted">{t("dashboard.unitEconomicsHint")}</p>
       )}
       {!reference && (
-        <p className="text-xs text-muted">{t("dashboard.electricitySplitHint")}</p>
+        <p className="mb-3 text-xs text-muted">{t("dashboard.electricitySplitHint")}</p>
       )}
+      <div className="space-y-3 md:grid md:grid-cols-3 md:gap-3 md:space-y-0">
       {active.map((row) => (
         <Card key={row.program} className="space-y-2">
           <div className="flex items-start justify-between gap-2">
@@ -76,8 +77,6 @@ export function ProgramEconomics({
               <span className="font-medium">{formatMkd(row.revenueMkd)}</span>
             </div>
             <CostLine label={t("dashboard.costWater")} value={row.waterMkd} />
-            <CostLine label={t("dashboard.costChem1")} value={row.chemical1Mkd} />
-            <CostLine label={t("dashboard.costChem2")} value={row.chemical2Mkd} />
             <CostLine label={t("dashboard.costElectricity")} value={row.electricityMkd} />
             <CostLine label={t("dashboard.costMisc")} value={row.miscMkd} />
             <div className="flex justify-between border-t border-border pt-2 text-sm font-semibold">
@@ -100,6 +99,7 @@ export function ProgramEconomics({
           </div>
         </Card>
       ))}
+      </div>
     </div>
   );
 }

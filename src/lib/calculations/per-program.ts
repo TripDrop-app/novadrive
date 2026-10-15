@@ -73,21 +73,8 @@ export function computeProgramBreakdowns(params: {
     params;
   const paid = counts.p1 + counts.p2 + counts.p3;
   const elec = allocateElectricityByProgram(electricityCostMkd, counts, settings);
-
-  const chem1PerWash =
-    paid > 0 && settings.chemical1YieldWashes && settings.chemical1YieldWashes > 0
-      ? settings.chemical1CostMkd / settings.chemical1YieldWashes
-      : paid > 0
-        ? chemical1CostMkd / paid
-        : 0;
-
-  const chem2Programs = counts.p2 + counts.p3;
-  const chem2PerWash =
-    chem2Programs > 0 && settings.chemical2YieldWashes && settings.chemical2YieldWashes > 0
-      ? settings.chemical2CostMkd / settings.chemical2YieldWashes
-      : chem2Programs > 0
-        ? chemical2CostMkd / chem2Programs
-        : 0;
+  void chemical1CostMkd;
+  void chemical2CostMkd;
 
   const totalWeight = elec.weights.p1 + elec.weights.p2 + elec.weights.p3;
 
@@ -100,8 +87,8 @@ export function computeProgramBreakdowns(params: {
   return programs.map(({ program, count }) => {
     const revenue = count * programPrice(program, settings);
     const water = waterCostForProgram(program, count, settings);
-    const chemical1 = count * chem1PerWash;
-    const chemical2 = program === 1 ? 0 : count * chem2PerWash;
+    const chemical1 = 0;
+    const chemical2 = 0;
     const electricity =
       program === 1 ? elec.p1 : program === 2 ? elec.p2 : elec.p3;
     const misc = paid > 0 ? (count / paid) * miscExpensesMkd : 0;
